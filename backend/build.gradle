@@ -1,0 +1,101 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '4.0.5'
+	id 'io.spring.dependency-management' version '1.1.7'
+	id 'org.openapi.generator' version '7.4.0'
+}
+
+group = 'com.tenpista.challenge'
+version = '0.0.1-SNAPSHOT'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(21)
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+ext {
+	mapstructVersion   = '1.5.5.Final'
+	lombokVersion      = '1.18.36'
+	jjwtVersion        = '0.12.6'
+}
+
+dependencies {
+	// Spring Boot starters
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
+	implementation 'org.springframework.boot:spring-boot-starter-flyway'
+
+	// Database
+	runtimeOnly 'org.postgresql:postgresql'
+	implementation 'org.flywaydb:flyway-database-postgresql'
+
+	// JWT (self-managed, same microservice)
+	implementation "io.jsonwebtoken:jjwt-api:${jjwtVersion}"
+	runtimeOnly    "io.jsonwebtoken:jjwt-impl:${jjwtVersion}"
+	runtimeOnly    "io.jsonwebtoken:jjwt-jackson:${jjwtVersion}"
+
+	// Lombok
+	compileOnly         "org.projectlombok:lombok:${lombokVersion}"
+	annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+
+	// MapStruct + Lombok binding (order matters)
+	implementation      "org.mapstruct:mapstruct:${mapstructVersion}"
+	annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+	annotationProcessor "org.projectlombok:lombok-mapstruct-binding:0.2.0"
+	annotationProcessor "org.mapstruct:mapstruct-processor:${mapstructVersion}"
+
+	// OpenAPI / Swagger UI
+	implementation 'io.swagger.core.v3:swagger-annotations:2.2.45'
+	implementation 'org.openapitools:jackson-databind-nullable:0.2.9'
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.2'
+
+	// Jakarta Validation
+	implementation 'jakarta.validation:jakarta.validation-api:3.1.1'
+
+	// Tests
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testCompileOnly         "org.projectlombok:lombok:${lombokVersion}"
+	testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+openApiGenerate {
+	generatorName.set("spring")
+	inputSpec.set("$rootDir/src/main/resources/openapi.yaml")
+	outputDir.set(layout.buildDirectory.dir("generated").map { it.asFile.path })
+	apiPackage.set("com.tenpista.challenge.backend.infrastructure.adapter.input.rest.api")
+	modelPackage.set("com.tenpista.challenge.backend.infrastructure.adapter.input.rest.dto")
+	configOptions.set([
+		interfaceOnly         : "true",
+		useSpringBoot3        : "true",
+		useTags               : "true",
+		serializationLibrary  : "jackson",
+		enumPropertyNaming    : "original",
+		useJakartaEe          : "true",
+		openApiNullable       : "false",
+		generateBuilders      : "false"
+	])
+}
+
+sourceSets {
+	main {
+		java {
+			srcDir layout.buildDirectory.dir("generated/src/main/java")
+		}
+	}
+}
+
+tasks.named('compileJava') {
+	dependsOn tasks.named('openApiGenerate')
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}

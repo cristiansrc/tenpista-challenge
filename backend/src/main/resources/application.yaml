@@ -1,0 +1,54 @@
+server:
+  port: ${PORT:8080}
+  servlet:
+    context-path: /v1/api
+
+spring:
+  application:
+    name: tenpista-challenge-backend
+  main:
+    allow-bean-definition-overriding: true
+
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:tenpista_db}
+    username: ${DB_USER:user_cris}
+    password: ${DB_PASSWORD:password_cris}
+    driver-class-name: org.postgresql.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: ${SHOW_SQL:false}
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    properties:
+      hibernate:
+        format_sql: false
+        jdbc:
+          time_zone: UTC
+
+  flyway:
+    enabled: true
+    locations:
+      - classpath:db/migration
+    baseline-on-migrate: true
+
+  jackson:
+    default-property-inclusion: non_null
+
+  threads:
+    virtual:
+      enabled: true
+
+jwt:
+  secret: ${JWT_SECRET:tenpista-challenge-default-secret-key-change-in-production-2026}
+  expiration: ${JWT_EXPIRATION:86400000}  # 24 horas en ms
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: method
+
+api:
+  base-path: ""

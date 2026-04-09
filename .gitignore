@@ -1,0 +1,35 @@
+# ─── Sistema Operativo ──────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# ─── IDEs y Editores ────────────────────────────────────────────────────────
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# ─── Variables de entorno / Secretos ────────────────────────────────────────
+.env
+.env.*
+!.env.example
+*.local
+
+# ─── Docker overrides locales ───────────────────────────────────────────────
+docker-compose.override.yml
+docker-compose.local.yml
+
+# ─── Logs ───────────────────────────────────────────────────────────────────
+*.log
+logs/
