@@ -45,7 +45,7 @@ function App() {
 
             <Route
               element={
-                <Authenticated fallback={<Navigate to="/login" replace />}>
+                <Authenticated key="private-routes" fallback={<Navigate to="/login" replace />}>
                   <AppLayout />
                 </Authenticated>
               }

@@ -1,4 +1,9 @@
-import type { DataProvider } from "@refinedev/core";
+import type {
+  BaseRecord,
+  DataProvider,
+  GetListParams,
+  LogicalFilter,
+} from "@refinedev/core";
 import { getJsonAuthHeaders } from "./shared/auth";
 import { handleJsonResponse } from "./shared/response";
 import type { TransactionPage } from "@/types/transaction";
@@ -8,29 +13,30 @@ const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8080/v1/api";
 export const transactionsDataProvider: DataProvider = {
   getApiUrl: () => API_URL,
 
-  getList: async ({ pagination, filters }) => {
-    const params = new URLSearchParams();
+  getList: async <TData extends BaseRecord = BaseRecord>(params: GetListParams) => {
+    const { pagination, filters } = params;
+    const queryParams = new URLSearchParams();
 
     // Paginación — Refine usa base-1, la API usa base-0
-    const currentPage = pagination?.current ?? 1;
+    const currentPage = pagination?.currentPage ?? 1;
     const pageSize = pagination?.pageSize ?? 10;
-    params.set("page", String(currentPage - 1));
-    params.set("size", String(pageSize));
+    queryParams.set("page", String(currentPage - 1));
+    queryParams.set("size", String(pageSize));
 
     // Filtro por nombre de Tenpista
     const nameFilter = filters?.find(
-      (f) => "field" in f && f.field === "tenpista_name"
+      (f): f is LogicalFilter => "field" in f && f.field === "tenpista_name"
     );
     if (nameFilter && "value" in nameFilter && nameFilter.value) {
-      params.set("tenpistaName", String(nameFilter.value));
+      queryParams.set("tenpistaName", String(nameFilter.value));
     }
 
-    const url = `${API_URL}/transactions?${params.toString()}`;
+    const url = `${API_URL}/transactions?${queryParams.toString()}`;
     const response = await fetch(url, { headers: getJsonAuthHeaders() });
     const data: TransactionPage = await handleJsonResponse(response);
 
     return {
-      data: data.content,
+      data: data.content as unknown as TData[],
       total: data.total_elements,
     };
   },

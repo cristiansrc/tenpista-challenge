@@ -16,7 +16,7 @@ const loginSchema = z.object({
 type LoginFormValues = z.infer<typeof loginSchema>;
 
 export function SignInForm() {
-  const { mutate: login, isLoading } = useLogin<LoginFormValues>();
+  const { mutate: login, isPending } = useLogin<LoginFormValues>();
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -62,7 +62,7 @@ export function SignInForm() {
                           type="email"
                           placeholder="admin@tenpo.cl"
                           autoComplete="username"
-                          disabled={isLoading}
+                          disabled={isPending}
                           {...field}
                         />
                       </FormControl>
@@ -81,7 +81,7 @@ export function SignInForm() {
                           type="password"
                           placeholder="••••••••"
                           autoComplete="current-password"
-                          disabled={isLoading}
+                          disabled={isPending}
                           {...field}
                         />
                       </FormControl>
@@ -89,8 +89,8 @@ export function SignInForm() {
                     </FormItem>
                   )}
                 />
-                <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? (
+                <Button type="submit" className="w-full" disabled={isPending}>
+                  {isPending ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Iniciando sesión...

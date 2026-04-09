@@ -1,7 +1,6 @@
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { Search, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 interface TransactionFiltersProps {
   onFilterChange: (tenpistaName: string) => void;
@@ -10,14 +9,22 @@ interface TransactionFiltersProps {
 export function TransactionFilters({ onFilterChange }: TransactionFiltersProps) {
   const [value, setValue] = useState("");
 
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      onFilterChange(value);
+    }, 300);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [value, onFilterChange]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setValue(e.target.value);
-    onFilterChange(e.target.value);
   };
 
   const handleClear = () => {
     setValue("");
-    onFilterChange("");
   };
 
   return (
@@ -35,6 +42,7 @@ export function TransactionFilters({ onFilterChange }: TransactionFiltersProps) 
           <button
             onClick={handleClear}
             className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground"
+            type="button"
             aria-label="Limpiar filtro"
           >
             <X className="h-4 w-4" />

@@ -14,8 +14,10 @@ Aplicación fullstack para el registro y consulta de transacciones financieras d
 - [Tecnologías](#tecnologías)
 - [Estructura del Proyecto](#estructura-del-proyecto)
 - [Variables de Entorno](#variables-de-entorno)
+- [Decisiones Técnicas](#decisiones-técnicas)
 - [Despliegue con Docker](#despliegue-con-docker)
 - [Desarrollo Local](#desarrollo-local)
+- [Interacción con la API (Swagger UI)](#interacción-con-la-api-swagger-ui)
 - [API Reference](#api-reference)
 - [Autenticación](#autenticación)
 - [Reglas de Negocio](#reglas-de-negocio)
@@ -258,6 +260,84 @@ tenpista-challenge/
 
 ---
 
+## Decisiones Técnicas
+
+### 1. Arquitectura Hexagonal (Ports & Adapters)
+
+**Decisión:** organizar el backend en capas domain → application → infrastructure con dependencias siempre apuntando hacia el dominio.
+
+**Por qué:** el dominio de negocio (reglas de validación, modelos) queda completamente aislado de Spring, JPA e HTTP. Esto permite cambiar la base de datos o el framework web sin tocar una sola línea de lógica de negocio. También facilita el testing unitario del dominio sin necesidad de levantar el contexto de Spring.
+
+---
+
+### 2. API Design First con OpenAPI Generator
+
+**Decisión:** definir el contrato en `openapi.yaml` antes de escribir código. El plugin `openapi-generator` de Gradle genera las interfaces Java en compile-time.
+
+**Por qué:** garantiza que los controladores nunca se desvíen del contrato documentado. Si el YAML cambia, el código que no cumpla el nuevo contrato rompe en compilación, no en producción. Además, la documentación Swagger UI se genera desde la misma fuente de verdad, eliminando la posibilidad de que docs y código se desincronicen.
+
+---
+
+### 3. JWT autogestionado (JJWT) en lugar de OAuth2
+
+**Decisión:** implementar la generación y validación de JWT directamente con JJWT 0.12.x y Spring Security.
+
+**Por qué:** el challenge pide autenticación self-managed. OAuth2 (Keycloak, Auth0) añadiría una infraestructura externa innecesaria para este scope. JJWT es la librería de facto para JWT en Java — type-safe, sin reflection, ampliamente usada en producción.
+
+**Detalle relevante:** se extrajo `PasswordEncoder` a una clase `PasswordConfig` separada para romper la dependencia circular `SecurityConfig → JwtAuthFilter → AuthService (UserDetailsService) → PasswordEncoder ← SecurityConfig`.
+
+---
+
+### 4. `PageResult<T>` propio en el dominio
+
+**Decisión:** usar un POJO genérico `PageResult<T>` en las interfaces del dominio en lugar de `org.springframework.data.domain.Page<T>`.
+
+**Por qué:** Spring's `Page<T>` es una clase de infraestructura. Usarla en los puertos del dominio introduciría una dependencia de Spring Data en la capa de negocio, rompiendo el principio de la arquitectura hexagonal. `PageResult<T>` es un POJO puro sin dependencias externas.
+
+---
+
+### 5. Flyway para migraciones + `ddl-auto: validate`
+
+**Decisión:** usar Flyway para gestionar el esquema de la base de datos y configurar Hibernate en modo `validate`.
+
+**Por qué:** `ddl-auto: create` o `update` son convenientes en desarrollo pero peligrosos en producción. Flyway da control total sobre cada cambio de esquema, con historial versionado y reproducible. El modo `validate` hace que la aplicación falle al arrancar si las entities no coinciden con la base de datos, evitando sorpresas en runtime.
+
+**Seed de usuario con `ApplicationRunner`:** la contraseña se hashea con BCrypt, lo que requiere ejecutar código de Spring. No es posible pre-computar un hash BCrypt en una migración SQL sin hardcodear el valor, por lo que se usa un `DataInitializer` que crea el usuario admin al arrancar si no existe ninguno.
+
+---
+
+### 6. MapStruct para mapeo entre capas
+
+**Decisión:** usar MapStruct en lugar de mapeo manual o ModelMapper.
+
+**Por qué:** MapStruct genera el código de mapeo en compile-time. Es type-safe (los errores de mapeo aparecen en compilación), tiene cero overhead en runtime (no usa reflection) y es considerablemente más rápido que ModelMapper en benchmarks. Los mappers se detectan fácilmente en el código al ser clases generadas concretas.
+
+---
+
+### 7. Vite en lugar de Next.js para el frontend
+
+**Decisión:** React SPA con Vite como bundler, servida con nginx.
+
+**Por qué:** la aplicación no requiere SSR ni SSG — es un panel de administración con autenticación donde el contenido es completamente dinámico y privado. Next.js añadiría complejidad de servidor innecesaria. Vite ofrece HMR instantáneo en desarrollo y produce un bundle estático que nginx sirve de forma óptima. El Dockerfile resultante es más simple y el contenedor de producción es más liviano.
+
+---
+
+### 8. Refine v5 para el frontend
+
+**Decisión:** usar Refine como meta-framework sobre React en lugar de implementar data fetching, paginación y auth guards desde cero.
+
+**Por qué:** Refine elimina el boilerplate repetitivo de aplicaciones CRUD: paginación server-side, estado de loading/error, guards de autenticación, sincronización de filtros con la URL. Se integra nativamente con TanStack Table para paginación server-side y con React Router para routing. El `DataProvider` y el `AuthProvider` son contratos simples que se implementan una vez y se reutilizan en toda la app.
+
+---
+
+### 9. Virtual Threads (Java 21)
+
+**Decisión:** activar virtual threads con `spring.threads.virtual.enabled: true`.
+
+**Por qué:** las operaciones del backend son mayoritariamente I/O-bound (queries a base de datos, validaciones). Los virtual threads de Project Loom permiten manejar muchas más solicitudes concurrentes sin cambiar una sola línea de código de negocio, usando la misma API de threading bloqueante pero con el scheduler del JVM administrando el contexto de forma eficiente.
+
+---
+
 ## Despliegue con Docker
 
 ### Requisitos
@@ -303,26 +383,48 @@ docker compose down -v
 
 ## Desarrollo Local
 
-### Backend
+### Paso 1 — Levantar la base de datos
 
-Requisitos: Java 21, PostgreSQL 15 corriendo localmente.
+La forma más sencilla es levantar **solo el servicio de base de datos** con Docker Compose, sin compilar el resto:
+
+```bash
+docker compose up db -d
+```
+
+Esto inicia PostgreSQL en `localhost:5432` con las credenciales definidas en `docker-compose.yml`. El volumen `tenpista_db_data` persiste los datos entre reinicios.
+
+Alternativamente, si tenés PostgreSQL instalado localmente, creá la base de datos manualmente:
+
+```sql
+CREATE DATABASE tenpista_db;
+```
+
+---
+
+### Paso 2 — Levantar el backend
+
+Requisitos: Java 21.
 
 ```bash
 cd backend
 
-# Compilar (genera código OpenAPI y compila)
+# Compilar: genera las interfaces OpenAPI y compila el proyecto
 ./gradlew build
 
-# Levantar con variables de entorno
+# Levantar (apuntando a la BD del paso anterior)
 SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/tenpista_db \
-SPRING_DATASOURCE_USERNAME=postgres \
-SPRING_DATASOURCE_PASSWORD=postgres \
+SPRING_DATASOURCE_USERNAME=user_cris \
+SPRING_DATASOURCE_PASSWORD=password_cris \
 ./gradlew bootRun
 ```
 
-El servidor arranca en `http://localhost:8080/v1/api`.
+Al arrancar, Flyway ejecuta automáticamente las migraciones (`V1`, `V2`) y `DataInitializer` crea el usuario seed si no existe.
 
-### Frontend
+El servidor queda disponible en `http://localhost:8080/v1/api`.
+
+---
+
+### Paso 3 — Levantar el frontend
 
 Requisitos: Node.js 20+.
 
@@ -331,13 +433,48 @@ cd frontend
 
 npm install
 
-# Crear archivo de entorno (ya existe por defecto)
-# VITE_API_URL=http://localhost:8080/v1/api
-
 npm run dev
 ```
 
-El dev server arranca en `http://localhost:5173`.
+El dev server arranca en `http://localhost:5173` con hot-reload habilitado.
+
+> El archivo `frontend/.env` ya contiene `VITE_API_URL=http://localhost:8080/v1/api` apuntando al backend local.
+
+---
+
+## Interacción con la API (Swagger UI)
+
+La API está documentada con Swagger UI, generada automáticamente desde `openapi.yaml`.
+
+**URL (con Docker o backend local):**
+```
+http://localhost:8080/v1/api/api-docs/swagger-ui
+```
+
+### Cómo autenticarse en Swagger UI
+
+Los endpoints de `/transactions` requieren JWT. Para usarlos desde Swagger:
+
+**1. Obtener el token — ejecutar `POST /auth/login`**
+
+En Swagger UI, expandir el endpoint `POST /auth/login`, hacer clic en **Try it out** e ingresar:
+
+```json
+{
+  "username": "admin@tenpo.cl",
+  "password": "Tenpista2026!"
+}
+```
+
+Ejecutar y copiar el valor de `access_token` de la respuesta.
+
+**2. Autorizar las requests**
+
+Hacer clic en el botón **Authorize** (candado) en la parte superior de Swagger UI. En el campo `bearerAuth`, pegar el token copiado (sin el prefijo "Bearer") y confirmar.
+
+**3. Usar los endpoints protegidos**
+
+Con el token configurado, ya es posible ejecutar `GET /transactions` y `POST /transactions` directamente desde Swagger UI. El header `Authorization: Bearer <token>` se agrega automáticamente a cada request.
 
 ---
 

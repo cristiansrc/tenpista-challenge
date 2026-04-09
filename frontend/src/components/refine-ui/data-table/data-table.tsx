@@ -7,6 +7,7 @@ import type { BaseRecord, HttpError } from "@refinedev/core";
 import type { UseTableReturnType } from "@refinedev/react-table";
 import { flexRender } from "@tanstack/react-table";
 import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 type DataTableProps<TData extends BaseRecord> = {
   table: UseTableReturnType<TData, HttpError>;
@@ -19,6 +20,8 @@ export function DataTable<TData extends BaseRecord>({ table }: DataTableProps<TD
   } = table;
 
   const isLoading = tableQuery.isLoading;
+  const isError = tableQuery.isError;
+  const total = tableQuery.data?.total;
   const leafColumns = getAllLeafColumns();
 
   return (
@@ -56,6 +59,20 @@ export function DataTable<TData extends BaseRecord>({ table }: DataTableProps<TD
                   </TableCell>
                 </TableRow>
               </>
+            ) : isError ? (
+              <TableRow className="hover:bg-transparent">
+                <TableCell colSpan={leafColumns.length} className="text-center py-16">
+                  <div className={cn("flex flex-col items-center gap-3")}>
+                    <p className="text-lg font-semibold text-destructive">Error al cargar transacciones</p>
+                    <p className="text-sm text-muted-foreground">
+                      Revisa tu conexión o vuelve a intentarlo.
+                    </p>
+                    <Button variant="outline" onClick={() => tableQuery.refetch()}>
+                      Reintentar
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
             ) : getRowModel().rows?.length ? (
               getRowModel().rows.map((row) => (
                 <TableRow key={row.original?.id ?? row.id} data-state={row.getIsSelected() ? "selected" : undefined}>
@@ -81,14 +98,14 @@ export function DataTable<TData extends BaseRecord>({ table }: DataTableProps<TD
           </TableBody>
         </Table>
       </div>
-      {!isLoading && getRowModel().rows?.length > 0 && (
+      {!isLoading && !isError && (total ?? 0) > 0 && (
         <DataTablePagination
           currentPage={currentPage}
           pageCount={pageCount}
           setCurrentPage={setCurrentPage}
           pageSize={pageSize}
           setPageSize={setPageSize}
-          total={tableQuery.data?.total}
+          total={total}
         />
       )}
     </div>

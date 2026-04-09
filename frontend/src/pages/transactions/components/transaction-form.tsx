@@ -46,7 +46,8 @@ interface TransactionFormProps {
 }
 
 export function TransactionForm({ open, onClose }: TransactionFormProps) {
-  const { mutate: create, isLoading } = useCreate();
+  const { mutate: create, mutation } = useCreate();
+  const isPending = mutation.isPending;
 
   const form = useForm<TransactionFormValues>({
     resolver: zodResolver(transactionSchema),
@@ -112,7 +113,7 @@ export function TransactionForm({ open, onClose }: TransactionFormProps) {
                       type="number"
                       placeholder="5000"
                       min={1}
-                      disabled={isLoading}
+                      disabled={isPending}
                       {...field}
                       onChange={(e) =>
                         field.onChange(e.target.value ? parseInt(e.target.value, 10) : undefined)
@@ -134,7 +135,7 @@ export function TransactionForm({ open, onClose }: TransactionFormProps) {
                   <FormControl>
                     <Input
                       placeholder="Starbucks"
-                      disabled={isLoading}
+                      disabled={isPending}
                       {...field}
                     />
                   </FormControl>
@@ -153,7 +154,7 @@ export function TransactionForm({ open, onClose }: TransactionFormProps) {
                   <FormControl>
                     <Input
                       placeholder="Cristian"
-                      disabled={isLoading}
+                      disabled={isPending}
                       {...field}
                     />
                   </FormControl>
@@ -172,7 +173,7 @@ export function TransactionForm({ open, onClose }: TransactionFormProps) {
                   <FormControl>
                     <Input
                       type="datetime-local"
-                      disabled={isLoading}
+                      disabled={isPending}
                       max={new Date().toISOString().slice(0, 16)}
                       {...field}
                     />
@@ -183,11 +184,11 @@ export function TransactionForm({ open, onClose }: TransactionFormProps) {
             />
 
             <DialogFooter className="pt-2">
-              <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>
+              <Button type="button" variant="outline" onClick={onClose} disabled={isPending}>
                 Cancelar
               </Button>
-              <Button type="submit" disabled={isLoading}>
-                {isLoading ? (
+              <Button type="submit" disabled={isPending}>
+                {isPending ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Guardando...
