@@ -6,6 +6,7 @@ import type { Transaction } from "@/types/transaction";
 import { DataTable } from "@/components/refine-ui/data-table/data-table";
 import { TransactionForm } from "./components/transaction-form";
 import { TransactionFilters } from "./components/transaction-filters";
+import type { TransactionFilterValues } from "./components/transaction-filters";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -67,7 +68,12 @@ const columns: ColumnDef<Transaction>[] = [
 
 export default function TransactionList() {
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [tenpistaFilter, setTenpistaFilter] = useState("");
+  const [filters, setFilters] = useState<TransactionFilterValues>({
+    tenpistaName: "",
+    commerceName: "",
+    fromDate: "",
+    toDate: "",
+  });
 
   const table = useTable<Transaction, HttpError>({
     columns,
@@ -75,9 +81,20 @@ export default function TransactionList() {
       resource: "transactions",
       pagination: { mode: "server" },
       filters: {
-        permanent: tenpistaFilter
-          ? [{ field: "tenpista_name", operator: "contains", value: tenpistaFilter }]
-          : [],
+        permanent: [
+          ...(filters.tenpistaName
+            ? [{ field: "tenpista_name", operator: "contains" as const, value: filters.tenpistaName }]
+            : []),
+          ...(filters.commerceName
+            ? [{ field: "commerce_name", operator: "contains" as const, value: filters.commerceName }]
+            : []),
+          ...(filters.fromDate
+            ? [{ field: "transaction_date_from", operator: "eq" as const, value: filters.fromDate }]
+            : []),
+          ...(filters.toDate
+            ? [{ field: "transaction_date_to", operator: "eq" as const, value: filters.toDate }]
+            : []),
+        ],
       },
       sorters: {
         permanent: [{ field: "transaction_date", order: "desc" }],
@@ -85,22 +102,22 @@ export default function TransactionList() {
     },
   });
 
-  const handleFilterChange = useCallback((value: string) => {
-    setTenpistaFilter(value);
+  const handleFilterChange = useCallback((value: TransactionFilterValues) => {
+    setFilters(value);
     table.refineCore.setCurrentPage(1);
   }, [table.refineCore]);
 
   return (
-    <div className="flex flex-col h-full p-6 gap-6">
+    <div className="flex h-full flex-col gap-4 p-4 sm:gap-6 sm:p-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Transacciones</h1>
           <p className="text-muted-foreground text-sm mt-1">
             Historial de movimientos de Tenpistas
           </p>
         </div>
-        <Button onClick={() => setIsFormOpen(true)} className="gap-2">
+        <Button onClick={() => setIsFormOpen(true)} className="gap-2 sm:w-auto">
           <Plus className="h-4 w-4" />
           Nueva Transacción
         </Button>
@@ -110,7 +127,7 @@ export default function TransactionList() {
       <TransactionFilters onFilterChange={handleFilterChange} />
 
       {/* Tabla */}
-      <DataTable table={table} />
+      <DataTable table={table} onCreateTransaction={() => setIsFormOpen(true)} />
 
       {/* Formulario modal */}
       <TransactionForm open={isFormOpen} onClose={() => setIsFormOpen(false)} />

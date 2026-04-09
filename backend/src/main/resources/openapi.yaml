@@ -57,6 +57,26 @@ paths:
           required: false
           schema:
             type: string
+        - name: commerceName
+          in: query
+          description: Filtro opcional por comercio/giro (búsqueda parcial, case-insensitive)
+          required: false
+          schema:
+            type: string
+        - name: fromDate
+          in: query
+          description: Fecha/hora inicial (inclusive) para filtrar por transaction_date
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: toDate
+          in: query
+          description: Fecha/hora final (inclusive) para filtrar por transaction_date
+          required: false
+          schema:
+            type: string
+            format: date-time
         - name: page
           in: query
           description: Número de página (base 0)

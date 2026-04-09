@@ -11,9 +11,13 @@ import { Button } from "@/components/ui/button";
 
 type DataTableProps<TData extends BaseRecord> = {
   table: UseTableReturnType<TData, HttpError>;
+  onCreateTransaction?: () => void;
 };
 
-export function DataTable<TData extends BaseRecord>({ table }: DataTableProps<TData>) {
+export function DataTable<TData extends BaseRecord>({
+  table,
+  onCreateTransaction,
+}: DataTableProps<TData>) {
   const {
     reactTable: { getHeaderGroups, getRowModel, getAllLeafColumns },
     refineCore: { tableQuery, currentPage, setCurrentPage, pageCount, pageSize, setPageSize },
@@ -91,6 +95,11 @@ export function DataTable<TData extends BaseRecord>({ table }: DataTableProps<TD
                     <p className="text-sm text-muted-foreground">
                       No hay transacciones registradas aún.
                     </p>
+                    {onCreateTransaction && (
+                      <Button variant="outline" className="mt-2" onClick={onCreateTransaction}>
+                        Crear primera transacción
+                      </Button>
+                    )}
                   </div>
                 </TableCell>
               </TableRow>

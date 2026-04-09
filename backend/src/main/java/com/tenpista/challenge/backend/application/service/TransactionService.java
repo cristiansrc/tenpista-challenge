@@ -17,8 +17,18 @@ public class TransactionService implements TransactionUseCase {
     private final TransactionRepositoryPort transactionRepositoryPort;
 
     @Override
-    public PageResult<Transaction> listTransactions(String tenpistaName, int page, int size) {
-        return transactionRepositoryPort.findAll(tenpistaName, page, size);
+    public PageResult<Transaction> listTransactions(
+            String tenpistaName,
+            String commerceName,
+            OffsetDateTime fromDate,
+            OffsetDateTime toDate,
+            int page,
+            int size
+    ) {
+        if (fromDate != null && toDate != null && fromDate.isAfter(toDate)) {
+            throw new InvalidBusinessRuleException("El rango de fechas es inválido: fromDate debe ser menor o igual a toDate.");
+        }
+        return transactionRepositoryPort.findAll(tenpistaName, commerceName, fromDate, toDate, page, size);
     }
 
     @Override

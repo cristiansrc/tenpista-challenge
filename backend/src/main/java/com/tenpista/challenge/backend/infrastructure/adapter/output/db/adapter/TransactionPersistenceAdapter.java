@@ -11,7 +11,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Component;
+
+import java.time.OffsetDateTime;
 
 @Component
 @RequiredArgsConstructor
@@ -21,12 +24,45 @@ public class TransactionPersistenceAdapter implements TransactionRepositoryPort 
     private final TransactionPersistenceMapper mapper;
 
     @Override
-    public PageResult<Transaction> findAll(String tenpistaName, int page, int size) {
+        public PageResult<Transaction> findAll(
+            String tenpistaName,
+            String commerceName,
+            OffsetDateTime fromDate,
+            OffsetDateTime toDate,
+            int page,
+            int size
+        ) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "transactionDate"));
 
-        Page<TransactionEntity> entities = (tenpistaName != null && !tenpistaName.isBlank())
-                ? repository.findByTenpistaNameContainingIgnoreCase(tenpistaName, pageable)
-                : repository.findAll(pageable);
+        Specification<TransactionEntity> specification = (root, query, cb) -> cb.conjunction();
+
+        if (tenpistaName != null && !tenpistaName.isBlank()) {
+            String normalized = tenpistaName.toLowerCase();
+            specification = specification.and((root, query, cb) ->
+                cb.like(cb.lower(root.get("tenpistaName")), "%" + normalized + "%")
+            );
+        }
+
+        if (commerceName != null && !commerceName.isBlank()) {
+            String normalized = commerceName.toLowerCase();
+            specification = specification.and((root, query, cb) ->
+                cb.like(cb.lower(root.get("commerceName")), "%" + normalized + "%")
+            );
+        }
+
+        if (fromDate != null) {
+            specification = specification.and((root, query, cb) ->
+                cb.greaterThanOrEqualTo(root.get("transactionDate"), fromDate)
+            );
+        }
+
+        if (toDate != null) {
+            specification = specification.and((root, query, cb) ->
+                cb.lessThanOrEqualTo(root.get("transactionDate"), toDate)
+            );
+        }
+
+        Page<TransactionEntity> entities = repository.findAll(specification, pageable);
 
         return new PageResult<>(
                 entities.getContent().stream().map(mapper::toDomain).toList(),

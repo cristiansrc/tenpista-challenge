@@ -23,12 +23,35 @@ export const transactionsDataProvider: DataProvider = {
     queryParams.set("page", String(currentPage - 1));
     queryParams.set("size", String(pageSize));
 
-    // Filtro por nombre de Tenpista
+    // Filtro por nombre de Tenpista (servidor)
     const nameFilter = filters?.find(
       (f): f is LogicalFilter => "field" in f && f.field === "tenpista_name"
     );
     if (nameFilter && "value" in nameFilter && nameFilter.value) {
       queryParams.set("tenpistaName", String(nameFilter.value));
+    }
+
+    // Filtro por comercio (servidor)
+    const commerceFilter = filters?.find(
+      (f): f is LogicalFilter => "field" in f && f.field === "commerce_name"
+    );
+    if (commerceFilter && "value" in commerceFilter && commerceFilter.value) {
+      queryParams.set("commerceName", String(commerceFilter.value));
+    }
+
+    // Filtro por rango de fechas (servidor)
+    const fromDateFilter = filters?.find(
+      (f): f is LogicalFilter => "field" in f && f.field === "transaction_date_from"
+    );
+    if (fromDateFilter && "value" in fromDateFilter && fromDateFilter.value) {
+      queryParams.set("fromDate", `${String(fromDateFilter.value)}T00:00:00Z`);
+    }
+
+    const toDateFilter = filters?.find(
+      (f): f is LogicalFilter => "field" in f && f.field === "transaction_date_to"
+    );
+    if (toDateFilter && "value" in toDateFilter && toDateFilter.value) {
+      queryParams.set("toDate", `${String(toDateFilter.value)}T23:59:59.999Z`);
     }
 
     const url = `${API_URL}/transactions?${queryParams.toString()}`;

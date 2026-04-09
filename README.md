@@ -21,6 +21,7 @@ Aplicación fullstack para el registro y consulta de transacciones financieras d
 - [API Reference](#api-reference)
 - [Autenticación](#autenticación)
 - [Reglas de Negocio](#reglas-de-negocio)
+- [Credenciales de Acceso](#credenciales-de-acceso)
 
 ---
 
@@ -29,9 +30,20 @@ Aplicación fullstack para el registro y consulta de transacciones financieras d
 La aplicación permite a usuarios autenticados:
 
 - **Listar** el historial de transacciones paginado, ordenado por fecha descendente.
-- **Filtrar** transacciones por nombre de Tenpista (búsqueda parcial, case-insensitive).
+- **Filtrar** transacciones por nombre de Tenpista, comercio y rango de fechas.
 - **Registrar** nuevas transacciones con validaciones de negocio.
 - **Autenticarse** con JWT autogestionado (login → token → cookie).
+
+---
+
+## Credenciales de Acceso
+
+Usuario y contraseña del challenge (creados automáticamente por `DataInitializer` al iniciar backend):
+
+| Campo | Valor |
+|---|---|
+| Username | `admin@tenpo.cl` |
+| Password | `Tenpista2026!` |
 
 ---
 
@@ -66,33 +78,33 @@ openapi.yaml  →  openapi-generator (Gradle)  →  interfaces Java (build/gener
 El backend sigue el patrón **Ports & Adapters** (Hexagonal Architecture). El dominio no tiene ninguna dependencia de Spring ni de infraestructura.
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                         INFRAESTRUCTURA                         │
-│                                                                 │
-│  ┌──────────────────────┐     ┌───────────────────────────────┐ │
-│  │  Adapter INPUT (REST) │     │  Adapter OUTPUT (JPA/DB)      │ │
-│  │                      │     │                               │ │
-│  │  TransactionController│     │  TransactionPersistenceAdapter│ │
-│  │  AuthController       │     │  UserPersistenceAdapter       │ │
-│  │  DomainExceptionHandler│    │  TransactionEntity            │ │
-│  │  JwtAuthFilter        │     │  UserEntity                   │ │
-│  └──────────┬───────────┘     └──────────────┬────────────────┘ │
-│             │                                │                  │
-└─────────────┼────────────────────────────────┼──────────────────┘
+┌──────────────────────────────────────────────────────────────────┐
+│                         INFRAESTRUCTURA                          │
+│                                                                  │
+│  ┌──────────────────────┐     ┌────────────────────────────────┐ │
+│  │  Adapter INPUT (REST) │    │  Adapter OUTPUT (JPA/DB)       │ │
+│  │                       │    │                                │ │
+│  │  TransactionController│    │  TransactionPersistenceAdapter │ │
+│  │  AuthController       │    │  UserPersistenceAdapter        │ │
+│  │  DomainExceptionHandler│   │  TransactionEntity             │ │
+│  │  JwtAuthFilter        │    │  UserEntity                    │ │
+│  └──────────┬───────────┘     └──────────────┬─────────────────┘ │
+│             │                                │                   │
+└─────────────┼────────────────────────────────┼───────────────────┘
               │ usa                            │ implementa
-┌─────────────▼────────────────────────────────▼──────────────────┐
-│                           DOMINIO                               │
-│                                                                 │
-│   Ports INPUT             Ports OUTPUT          Models          │
-│   ──────────────          ────────────          ──────          │
-│   TransactionUseCase  ←→  TransactionRepo       Transaction     │
-│   AuthUseCase         ←→  UserRepo              User            │
-│                                                 PageResult<T>   │
-│                                                 Exceptions      │
-│                                                                 │
-│   Application Services (implementan los Ports INPUT):           │
-│   TransactionService · AuthService                              │
-└─────────────────────────────────────────────────────────────────┘
+┌─────────────▼────────────────────────────────▼───────────────────┐
+│                           DOMINIO                                │
+│                                                                  │
+│   Ports INPUT             Ports OUTPUT          Models           │
+│   ──────────────          ────────────          ──────           │
+│   TransactionUseCase  ←→  TransactionRepo       Transaction      │
+│   AuthUseCase         ←→  UserRepo              User             │
+│                                                 PageResult<T>    │
+│                                                 Exceptions       │
+│                                                                  │
+│   Application Services (implementan los Ports INPUT):            │
+│   TransactionService · AuthService                               │
+└──────────────────────────────────────────────────────────────────┘
 ```
 
 **Regla de dependencias:** las flechas siempre apuntan **hacia el dominio**. El dominio no sabe nada de Spring, JPA ni HTTP.
@@ -237,16 +249,21 @@ tenpista-challenge/
 
 ## Variables de Entorno
 
+> Para este challenge se usa **un solo archivo** versionado: `.env` en la raíz del proyecto.
+
 ### Backend
 
 | Variable | Default | Descripción |
 |---|---|---|
-| `SPRING_DATASOURCE_URL` | — | URL JDBC de PostgreSQL |
-| `SPRING_DATASOURCE_USERNAME` | — | Usuario de la base de datos |
-| `SPRING_DATASOURCE_PASSWORD` | — | Contraseña de la base de datos |
-| `JWT_SECRET` | `tenpista-challenge-default...` | Clave secreta HMAC-SHA256 (mín. 256 bits) |
+| `DB_HOST` | `localhost` | Host de PostgreSQL |
+| `DB_PORT` | `5432` | Puerto de PostgreSQL |
+| `DB_NAME` | `tenpista_db` | Nombre de la base de datos |
+| `DB_USER` | `user_cris` | Usuario de la base de datos |
+| `DB_PASSWORD` | `password_cris` | Contraseña de la base de datos |
+| `JWT_SECRET` | `tenpista-challenge-super-secret-key-change-in-production-2026` | Clave secreta HMAC-SHA256 (mín. 256 bits) |
 | `JWT_EXPIRATION` | `86400000` | Expiración del token en ms (24 h) |
 | `PORT` | `8080` | Puerto del servidor |
+| `SHOW_SQL` | `false` | Log SQL de Hibernate |
 
 > **Producción:** reemplazar `JWT_SECRET` por una clave segura generada con `openssl rand -base64 32`.
 
@@ -411,10 +428,7 @@ cd backend
 # Compilar: genera las interfaces OpenAPI y compila el proyecto
 ./gradlew build
 
-# Levantar (apuntando a la BD del paso anterior)
-SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/tenpista_db \
-SPRING_DATASOURCE_USERNAME=user_cris \
-SPRING_DATASOURCE_PASSWORD=password_cris \
+# Levantar (usa valores por default o los definidos en ../.env)
 ./gradlew bootRun
 ```
 
@@ -438,7 +452,7 @@ npm run dev
 
 El dev server arranca en `http://localhost:5173` con hot-reload habilitado.
 
-> El archivo `frontend/.env` ya contiene `VITE_API_URL=http://localhost:8080/v1/api` apuntando al backend local.
+> El archivo raíz `.env` ya contiene `VITE_API_URL=http://localhost:8080/v1/api` apuntando al backend local.
 
 ---
 
@@ -507,7 +521,7 @@ POST /auth/login
 ### Listar Transacciones
 
 ```
-GET /transactions?page=0&size=10&tenpistaName=Cristian
+GET /transactions?page=0&size=10&tenpistaName=Cristian&commerceName=Starbucks&fromDate=2026-04-01T00:00:00Z&toDate=2026-04-09T23:59:59Z
 ```
 
 Requiere header: `Authorization: Bearer <token>`
@@ -519,6 +533,11 @@ Requiere header: `Authorization: Bearer <token>`
 | `page` | integer | `0` | Número de página (base 0) |
 | `size` | integer | `10` | Elementos por página (máx. 100) |
 | `tenpistaName` | string | — | Filtro parcial por nombre (case-insensitive) |
+| `commerceName` | string | — | Filtro parcial por comercio/giro (case-insensitive) |
+| `fromDate` | date-time | — | Fecha/hora inicial inclusiva para `transaction_date` |
+| `toDate` | date-time | — | Fecha/hora final inclusiva para `transaction_date` |
+
+> Si `fromDate` y `toDate` vienen informadas, el backend valida que `fromDate <= toDate`.
 
 **Response `200`:**
 ```json
@@ -604,8 +623,9 @@ Usuario → POST /auth/login → JWT
 |---|---|
 | `amount > 0` | El monto debe ser un entero positivo en pesos CLP |
 | `transaction_date <= now()` | La fecha de la transacción no puede ser futura |
+| `fromDate <= toDate` | En el listado de transacciones, el rango de fechas debe ser válido |
 | Autenticación requerida | Todos los endpoints de `/transactions` requieren JWT válido |
 
 Las validaciones se aplican en **dos capas**:
 - **Frontend:** Zod schema en el formulario (feedback inmediato al usuario).
-- **Backend:** `TransactionService` lanza `InvalidBusinessRuleException` → HTTP 400.
+- **Backend:** `TransactionService` valida creación y rango de filtros, y lanza `InvalidBusinessRuleException` → HTTP 400.

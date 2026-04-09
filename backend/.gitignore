@@ -43,9 +43,9 @@ bin/
 .vscode/
 
 # ─── Variables de entorno / Secretos ────────────────────────────────────────
-.env
 .env.*
 !.env.example
+!.env
 application-local.yaml
 application-local.yml
 

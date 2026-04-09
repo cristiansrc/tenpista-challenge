@@ -23,11 +23,17 @@ public class TransactionController implements TransactionsApi {
     @Override
     public ResponseEntity<TransactionPage> listTransactions(
             String tenpistaName,
+            String commerceName,
+            java.time.OffsetDateTime fromDate,
+            java.time.OffsetDateTime toDate,
             Integer page,
             Integer size
     ) {
         PageResult<Transaction> result = transactionUseCase.listTransactions(
                 tenpistaName,
+                commerceName,
+                fromDate,
+                toDate,
                 page != null ? page : 0,
                 size != null ? size : 10
         );
