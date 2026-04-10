@@ -12,6 +12,7 @@ Aplicación fullstack para el registro y consulta de transacciones financieras d
   - [Arquitectura Hexagonal (Backend)](#arquitectura-hexagonal-backend)
   - [Estructura Frontend](#estructura-frontend)
 - [Tecnologías](#tecnologías)
+- [Principios SOLID en el Proyecto](#principios-solid-en-el-proyecto)
 - [Estructura del Proyecto](#estructura-del-proyecto)
 - [Variables de Entorno](#variables-de-entorno)
 - [Decisiones Técnicas](#decisiones-técnicas)
@@ -153,6 +154,48 @@ src/
 ├── App.tsx                  # Refine setup, rutas, providers
 └── main.tsx                 # Entry point
 ```
+
+---
+
+## Principios SOLID en el Proyecto
+
+El diseño del backend (arquitectura hexagonal + puertos) y del frontend (providers y componentes desacoplados) aplica SOLID de forma práctica:
+
+### S — Single Responsibility Principle (SRP)
+
+- Cada clase/componente tiene una responsabilidad concreta.
+- Ejemplos backend:
+  - `TransactionService` concentra reglas de negocio de transacciones.
+  - `JwtAuthFilter` solo resuelve autenticación por token en la cadena de seguridad.
+  - `DomainExceptionHandler` solo transforma excepciones en respuestas HTTP estandarizadas.
+- Ejemplos frontend:
+  - `transactionsDataProvider` encapsula acceso HTTP a transacciones.
+  - `TransactionForm` maneja captura/validación del formulario.
+  - `TransactionFilters` maneja estado y emisión de filtros.
+
+### O — Open/Closed Principle (OCP)
+
+- El sistema está abierto a extensión sin modificar la lógica central.
+- Nuevos filtros en transacciones se agregan extendiendo criterios y contrato OpenAPI, sin romper servicios existentes.
+- Nuevos adapters de salida (por ejemplo, otra persistencia) pueden implementarse sobre los mismos puertos del dominio.
+
+### L — Liskov Substitution Principle (LSP)
+
+- Las implementaciones de puertos (`TransactionRepo`, `UserRepo`) son sustituibles mientras respeten el contrato.
+- En tests, dobles/mocks reemplazan implementaciones reales sin alterar el comportamiento esperado de casos de uso.
+
+### I — Interface Segregation Principle (ISP)
+
+- Se usan interfaces pequeñas y orientadas a casos de uso:
+  - `TransactionUseCase` separado de `AuthUseCase`.
+  - `TransactionRepo` separado de `UserRepo`.
+- Esto evita dependencias innecesarias y reduce el impacto de cambios entre módulos.
+
+### D — Dependency Inversion Principle (DIP)
+
+- El dominio depende de abstracciones (ports), no de detalles de infraestructura.
+- Los servicios de aplicación dependen de interfaces de repositorio, y los adapters de infraestructura implementan esas interfaces.
+- Resultado: mayor testabilidad, bajo acoplamiento y posibilidad de reemplazar detalles técnicos (DB/framework) con cambios mínimos.
 
 ---
 
