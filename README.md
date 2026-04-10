@@ -766,4 +766,5 @@ Usuario → POST /auth/login → JWT
 Las validaciones se aplican en **dos capas**:
 - **Frontend:** Zod schema en el formulario (feedback inmediato al usuario).
 - **Backend:** `TransactionService` valida creación y rango de filtros, y lanza `InvalidBusinessRuleException` → HTTP 400.
+
 **Por que** Esta estrategia de validación doble garantiza una UX fluida (feedback inmediato en el front) y integridad de datos absoluta (defensa en profundidad en el backend) ante cualquier bypass accidental o malintencionado de la UI.
