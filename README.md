@@ -360,6 +360,8 @@ tenpista-challenge/
 
 **Por qué:** las operaciones del backend son mayoritariamente I/O-bound (queries a base de datos, validaciones). Los virtual threads de Project Loom permiten manejar muchas más solicitudes concurrentes sin cambiar una sola línea de código de negocio, usando la misma API de threading bloqueante pero con el scheduler del JVM administrando el contexto de forma eficiente.
 
+---
+
 ### 10. Sprint Boot (4.0)
 
 **Decisión:** Usar la version 4.0 de Spring Boot.
