@@ -362,7 +362,7 @@ tenpista-challenge/
 
 ### 10. Sprint Boot (4.0)
 
-**Decisión:** User la version 4.0 de Spring Boot.
+**Decisión:** Usar la version 4.0 de Spring Boot.
 
 **Por qué:** Se optó por Spring Boot 4.0 para aprovechar el soporte nativo de primera clase para Virtual Threads y las optimizaciones de Spring Framework 7, garantizando un manejo de concurrencia eficiente con un consumo de recursos mínimo en entornos de contenedores.
 
