@@ -368,6 +368,14 @@ tenpista-challenge/
 
 ---
 
+### 11. Estandarización de errores con `DomainExceptionHandler`
+
+**Decisión:** centralizar el manejo de excepciones de negocio y validación en una clase `DomainExceptionHandler` anotada con `@RestControllerAdvice`.
+
+**Por qué:** permite devolver respuestas de error consistentes (status code, mensaje y estructura), desacoplando los controladores de la lógica de manejo de excepciones. Esto mejora la mantenibilidad, evita duplicación de bloques `try/catch` y hace más predecible el contrato de errores para el frontend y para consumidores de la API.
+
+---
+
 ## Despliegue con Docker
 
 ### Requisitos
