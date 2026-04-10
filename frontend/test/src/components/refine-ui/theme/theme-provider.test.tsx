@@ -1,5 +1,5 @@
-import { render, screen } from "@testing-library/react";
-import { ThemeProvider } from "./theme-provider";
+﻿import { render, screen } from "@testing-library/react";
+import { ThemeProvider } from "@/components/refine-ui/theme/theme-provider";
 
 const nextThemesProviderSpy = vi.fn();
 
@@ -32,3 +32,4 @@ describe("ThemeProvider wrapper", () => {
     );
   });
 });
+

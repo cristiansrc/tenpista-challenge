@@ -175,7 +175,12 @@ export function TransactionForm({ open, onClose }: TransactionFormProps) {
                     <Input
                       type="datetime-local"
                       disabled={isPending}
-                      max={new Date().toISOString().slice(0, 16)}
+                      onInvalid={(event) => {
+                        event.currentTarget.setCustomValidity("Ingresa una fecha y hora válidas");
+                      }}
+                      onInput={(event) => {
+                        event.currentTarget.setCustomValidity("");
+                      }}
                       {...field}
                     />
                   </FormControl>

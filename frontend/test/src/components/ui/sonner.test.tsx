@@ -1,5 +1,5 @@
-import { render, screen } from "@testing-library/react";
-import { Toaster } from "./sonner";
+﻿import { render, screen } from "@testing-library/react";
+import { Toaster } from "@/components/ui/sonner";
 
 const sonnerSpy = vi.fn();
 
@@ -25,3 +25,4 @@ describe("ui Toaster", () => {
     );
   });
 });
+

@@ -1,6 +1,6 @@
-import { render, screen } from "@testing-library/react";
+﻿import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { ErrorComponent } from "./error-component";
+import { ErrorComponent } from "@/components/refine-ui/layout/error-component";
 import { useGo } from "@refinedev/core";
 
 const goMock = vi.fn();
@@ -21,3 +21,4 @@ describe("ErrorComponent", () => {
     expect(goMock).toHaveBeenCalledWith({ to: "/transactions", type: "push" });
   });
 });
+

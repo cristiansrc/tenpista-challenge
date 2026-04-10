@@ -1,12 +1,12 @@
-import { transactionsDataProvider } from "./transactions";
-import * as authModule from "./shared/auth";
-import * as responseModule from "./shared/response";
+﻿import { transactionsDataProvider } from "@/providers/data-provider/transactions";
+import * as authModule from "@/providers/data-provider/shared/auth";
+import * as responseModule from "@/providers/data-provider/shared/response";
 
-vi.mock("./shared/auth", () => ({
+vi.mock("@/providers/data-provider/shared/auth", () => ({
   getJsonAuthHeaders: vi.fn(() => ({ "Content-Type": "application/json" })),
 }));
 
-vi.mock("./shared/response", () => ({
+vi.mock("@/providers/data-provider/shared/response", () => ({
   handleJsonResponse: vi.fn(),
 }));
 
@@ -118,12 +118,13 @@ describe("transactionsDataProvider", () => {
   it("update throws unsupported error", async () => {
     await expect(
       transactionsDataProvider.update({ resource: "transactions", id: 1, variables: {} })
-    ).rejects.toThrow("Update not supported for transactions");
+    ).rejects.toThrow("Actualizar transacciones no está soportado");
   });
 
   it("deleteOne throws unsupported error", async () => {
     await expect(
       transactionsDataProvider.deleteOne({ resource: "transactions", id: 1 })
-    ).rejects.toThrow("Delete not supported for transactions");
+    ).rejects.toThrow("Eliminar transacciones no está soportado");
   });
 });
+

@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+﻿import { render, screen } from "@testing-library/react";
 import {
   Select,
   SelectContent,
@@ -8,7 +8,7 @@ import {
   SelectSeparator,
   SelectTrigger,
   SelectValue,
-} from "./select";
+} from "@/components/ui/select";
 
 describe("Select primitives", () => {
   it("renders trigger and content items when open", () => {
@@ -34,3 +34,4 @@ describe("Select primitives", () => {
     expect(screen.getByText("20")).toBeInTheDocument();
   });
 });
+

@@ -1,11 +1,12 @@
-import { render, screen } from "@testing-library/react";
+﻿import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { AppLayout } from "./app-layout";
+import { AppLayout } from "@/components/layout/app-layout";
 import { useGetIdentity, useLogout } from "@refinedev/core";
 import { useTheme } from "next-themes";
 
 const logoutMock = vi.fn();
 const setThemeMock = vi.fn();
+let navIsActive = false;
 
 vi.mock("@refinedev/core", () => ({
   useLogout: vi.fn(),
@@ -27,7 +28,7 @@ vi.mock("react-router", () => ({
     <a
       href={to}
       onClick={onClick}
-      className={typeof className === "function" ? className({ isActive: false }) : className}
+      className={typeof className === "function" ? className({ isActive: navIsActive }) : className}
     >
       {children}
     </a>
@@ -38,6 +39,7 @@ describe("AppLayout", () => {
   beforeEach(() => {
     logoutMock.mockReset();
     setThemeMock.mockReset();
+    navIsActive = false;
 
     vi.mocked(useLogout).mockReturnValue({ mutate: logoutMock } as unknown as ReturnType<typeof useLogout>);
     vi.mocked(useTheme).mockReturnValue({
@@ -77,4 +79,46 @@ describe("AppLayout", () => {
       "https://avatar.test/user.png"
     );
   });
+
+  it("opens mobile navigation menu", async () => {
+    vi.mocked(useGetIdentity).mockReturnValue({
+      data: { name: "Cristian" },
+    } as unknown as ReturnType<typeof useGetIdentity>);
+
+    render(<AppLayout />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Abrir menú de navegación" }));
+
+    expect(screen.getByText("Menú de navegación")).toBeInTheDocument();
+  });
+
+  it("applies active navigation classes", () => {
+    navIsActive = true;
+    vi.mocked(useGetIdentity).mockReturnValue({
+      data: { name: "Cristian" },
+    } as unknown as ReturnType<typeof useGetIdentity>);
+
+    render(<AppLayout />);
+
+    const transactionLink = screen.getAllByRole("link", { name: "Transacciones" })[0];
+    expect(transactionLink.className).toContain("bg-sidebar-accent");
+  });
+
+  it("toggles to dark theme when current theme is light", async () => {
+    const user = userEvent.setup();
+    vi.mocked(useTheme).mockReturnValue({
+      theme: "light",
+      setTheme: setThemeMock,
+    } as unknown as ReturnType<typeof useTheme>);
+    vi.mocked(useGetIdentity).mockReturnValue({
+      data: { name: "Cristian" },
+    } as unknown as ReturnType<typeof useGetIdentity>);
+
+    render(<AppLayout />);
+
+    await user.click(screen.getByRole("button", { name: "Cambiar tema" }));
+    expect(setThemeMock).toHaveBeenCalledWith("dark");
+  });
+
 });
+

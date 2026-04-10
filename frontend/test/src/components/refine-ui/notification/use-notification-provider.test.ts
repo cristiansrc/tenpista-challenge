@@ -1,4 +1,4 @@
-import { useNotificationProvider } from "./use-notification-provider";
+﻿import { useNotificationProvider } from "@/components/refine-ui/notification/use-notification-provider";
 import { toast } from "sonner";
 
 vi.mock("sonner", () => ({
@@ -42,3 +42,4 @@ describe("useNotificationProvider", () => {
     expect(() => provider.close()).not.toThrow();
   });
 });
+

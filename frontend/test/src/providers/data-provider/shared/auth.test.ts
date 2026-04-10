@@ -1,5 +1,5 @@
-import Cookies from "js-cookie";
-import { getAccessToken, getJsonAuthHeaders } from "./auth";
+﻿import Cookies from "js-cookie";
+import { getAccessToken, getJsonAuthHeaders } from "@/providers/data-provider/shared/auth";
 
 vi.mock("js-cookie", () => ({
   default: {
@@ -47,3 +47,4 @@ describe("shared auth", () => {
     });
   });
 });
+

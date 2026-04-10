@@ -1,4 +1,4 @@
-import { handleJsonResponse } from "./response";
+﻿import { handleJsonResponse } from "@/providers/data-provider/shared/response";
 
 describe("handleJsonResponse", () => {
   it("returns parsed JSON when response is OK with body", async () => {
@@ -29,3 +29,4 @@ describe("handleJsonResponse", () => {
     });
   });
 });
+

@@ -1,4 +1,4 @@
-import { Toaster as NotificationToaster } from "./toaster";
+﻿import { Toaster as NotificationToaster } from "@/components/refine-ui/notification/toaster";
 import { Toaster as UiToaster } from "@/components/ui/sonner";
 
 describe("notification toaster re-export", () => {
@@ -6,3 +6,4 @@ describe("notification toaster re-export", () => {
     expect(NotificationToaster).toBe(UiToaster);
   });
 });
+

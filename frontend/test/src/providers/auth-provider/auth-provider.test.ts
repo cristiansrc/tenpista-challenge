@@ -1,5 +1,5 @@
-import Cookies from "js-cookie";
-import { authProvider } from "./auth-provider";
+﻿import Cookies from "js-cookie";
+import { authProvider } from "@/providers/auth-provider/auth-provider";
 
 vi.mock("js-cookie", () => ({
   default: {
@@ -157,3 +157,4 @@ describe("authProvider", () => {
     await expect(authProvider.onError?.(error)).resolves.toEqual({ error });
   });
 });
+

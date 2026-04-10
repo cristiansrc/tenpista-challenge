@@ -1,4 +1,4 @@
-import { cn, formatCurrency, formatDate } from "./utils";
+﻿import { cn, formatCurrency, formatDate } from "@/lib/utils";
 
 describe("utils", () => {
   it("cn merges class names with tailwind precedence", () => {
@@ -28,3 +28,4 @@ describe("utils", () => {
     expect(formatDate(iso)).toBe(expected);
   });
 });
+

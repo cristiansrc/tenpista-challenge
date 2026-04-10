@@ -1,6 +1,6 @@
-import { render, screen } from "@testing-library/react";
+﻿import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { DataTablePagination } from "./data-table-pagination";
+import { DataTablePagination } from "@/components/refine-ui/data-table/data-table-pagination";
 
 vi.mock("@/components/ui/select", () => ({
   Select: ({ onValueChange, children }: { onValueChange: (value: string) => void; children: React.ReactNode }) => (
@@ -48,3 +48,4 @@ describe("DataTablePagination", () => {
     expect(setPageSize).toHaveBeenCalledWith(20);
   });
 });
+

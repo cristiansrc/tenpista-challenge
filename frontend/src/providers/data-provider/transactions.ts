@@ -84,11 +84,11 @@ export const transactionsDataProvider: DataProvider = {
   },
 
   update: async () => {
-    throw new Error("Update not supported for transactions");
+    throw new Error("Actualizar transacciones no está soportado");
   },
 
   deleteOne: async () => {
-    throw new Error("Delete not supported for transactions");
+    throw new Error("Eliminar transacciones no está soportado");
   },
 
   getMany: async ({ ids }) => {

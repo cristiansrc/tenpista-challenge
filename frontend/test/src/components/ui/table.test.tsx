@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+﻿import { render, screen } from "@testing-library/react";
 import {
   Table,
   TableBody,
@@ -8,7 +8,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "./table";
+} from "@/components/ui/table";
 
 describe("Table primitives", () => {
   it("renders composed table structure", () => {
@@ -42,3 +42,4 @@ describe("Table primitives", () => {
     expect(screen.getByText("Total")).toBeInTheDocument();
   });
 });
+

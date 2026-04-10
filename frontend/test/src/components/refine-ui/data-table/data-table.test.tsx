@@ -1,6 +1,6 @@
-import { render, screen } from "@testing-library/react";
+﻿import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { DataTable } from "./data-table";
+import { DataTable } from "@/components/refine-ui/data-table/data-table";
 
 vi.mock("@/components/refine-ui/data-table/data-table-pagination", () => ({
   DataTablePagination: () => <div>mock-pagination</div>,
@@ -120,3 +120,4 @@ describe("DataTable", () => {
     expect(screen.getByText("mock-pagination")).toBeInTheDocument();
   });
 });
+

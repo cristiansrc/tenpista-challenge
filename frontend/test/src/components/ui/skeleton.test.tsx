@@ -1,5 +1,5 @@
-import { render } from "@testing-library/react";
-import { Skeleton } from "./skeleton";
+﻿import { render } from "@testing-library/react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 describe("Skeleton", () => {
   it("renders default skeleton styles plus custom class", () => {
@@ -10,3 +10,4 @@ describe("Skeleton", () => {
     expect(element).toHaveClass("animate-pulse", "rounded-md", "bg-muted", "h-4", "w-8");
   });
 });
+

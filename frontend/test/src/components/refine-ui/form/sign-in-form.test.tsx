@@ -1,6 +1,6 @@
-import { render, screen } from "@testing-library/react";
+﻿import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { SignInForm } from "./sign-in-form";
+import { SignInForm } from "@/components/refine-ui/form/sign-in-form";
 import { useLogin } from "@refinedev/core";
 
 vi.mock("@refinedev/core", () => ({
@@ -41,3 +41,4 @@ describe("SignInForm", () => {
     expect(screen.getByLabelText("Contraseña")).toBeDisabled();
   });
 });
+

@@ -30,12 +30,14 @@ Aplicación fullstack para el registro y consulta de transacciones financieras d
 
 ## Descripción General
 
-La aplicación permite a usuarios autenticados:
+La aplicación permite:
 
 - **Listar** el historial de transacciones paginado, ordenado por fecha descendente.
 - **Filtrar** transacciones por nombre de Tenpista, comercio y rango de fechas.
 - **Registrar** nuevas transacciones con validaciones de negocio.
-- **Autenticarse** con JWT autogestionado (login → token → cookie).
+- **Autenticarse** con JWT autogestionado (login → token → cookie), incorporado como mejora de seguridad.
+
+> Nota: la autenticación no era un requerimiento explícito del challenge; se agregó para reforzar seguridad y demostrar buenas prácticas.
 
 ---
 
@@ -298,11 +300,13 @@ tenpista-challenge/
 
 ---
 
-### 3. JWT autogestionado (JJWT) en lugar de OAuth2
+### 3. Autenticación agregada como mejora de seguridad (JWT)
 
-**Decisión:** implementar la generación y validación de JWT directamente con JJWT 0.12.x y Spring Security.
+**Decisión:** agregar login con JWT autogestionado (JJWT 0.12.x + Spring Security) como capa adicional de seguridad, aunque el challenge no lo exige explícitamente.
 
-**Por qué:** el challenge pide autenticación self-managed. OAuth2 (Keycloak, Auth0) añadiría una infraestructura externa innecesaria para este scope. JJWT es la librería de facto para JWT en Java — type-safe, sin reflection, ampliamente usada en producción.
+**Por qué:** el enunciado se centra en CRUD/listado de transacciones, validaciones y calidad técnica, sin requerir autenticación. Se incorporó login para proteger endpoints sensibles, simular un escenario más realista y demostrar manejo de seguridad en API REST sin depender de un proveedor externo.
+
+**Alcance de la decisión:** se prefirió JWT autogestionado sobre OAuth2 para mantener bajo el overhead operativo del challenge. OAuth2 (Keycloak/Auth0) era válido, pero sobredimensionado para este contexto y tiempo de entrega.
 
 **Detalle relevante:** se extrajo `PasswordEncoder` a una clase `PasswordConfig` separada para romper la dependencia circular `SecurityConfig → JwtAuthFilter → AuthService (UserDetailsService) → PasswordEncoder ← SecurityConfig`.
 
@@ -468,10 +472,12 @@ Cobertura actual obtenida ejecutando los comandos del proyecto:
 - Backend: `./gradlew cleanTest test jacocoTestReport jacocoTestCoverageVerification`
 - Frontend: `npm run test:coverage`
 
+Fecha de medición: **2026-04-09**.
+
 | Módulo | Lines | Statements | Branches | Functions |
 |---|---:|---:|---:|---:|
 | Backend | **100.00%** | 100.00% | 100.00% | 100.00% |
-| Frontend | **97.14%** | 97.14% | 90.82% | 81.01% |
+| Frontend | **99.04%** | 99.04% | 92.41% | 92.85% |
 
 Notas:
 

@@ -14,18 +14,23 @@ interface Identity {
   avatar?: string;
 }
 
-export function AppLayout() {
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { mutate: logout } = useLogout();
-  const { data: identity } = useGetIdentity<Identity>();
-  const { theme, setTheme } = useTheme();
+interface SidebarContentProps {
+  isMobile?: boolean;
+  identity?: Identity;
+  theme?: string;
+  onCloseMobileMenu: () => void;
+  onToggleTheme: () => void;
+  onLogout: () => void;
+}
 
-  const handleLogout = () => {
-    setMobileMenuOpen(false);
-    logout();
-  };
-
-  const SidebarContent = ({ isMobile = false }: { isMobile?: boolean }) => (
+function SidebarContent({
+  isMobile = false,
+  identity,
+  onCloseMobileMenu,
+  onToggleTheme,
+  onLogout,
+}: SidebarContentProps) {
+  return (
     <>
       <div className="flex items-center gap-2 h-16 px-4 border-b border-sidebar-border">
         <div className="h-8 w-8 rounded-lg bg-sidebar-primary flex items-center justify-center shrink-0">
@@ -37,7 +42,7 @@ export function AppLayout() {
       <nav className="flex-1 p-3 space-y-1">
         <NavLink
           to="/transactions"
-          onClick={() => isMobile && setMobileMenuOpen(false)}
+          onClick={() => isMobile && onCloseMobileMenu()}
           className={({ isActive }) =>
             cn(
               "flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors",
@@ -75,7 +80,7 @@ export function AppLayout() {
             variant="ghost"
             size="icon"
             className="h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent"
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            onClick={onToggleTheme}
             aria-label="Cambiar tema"
           >
             <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
@@ -85,7 +90,7 @@ export function AppLayout() {
             variant="ghost"
             size="sm"
             className="flex-1 justify-start gap-2 text-sidebar-foreground hover:bg-sidebar-accent text-xs h-8"
-            onClick={handleLogout}
+            onClick={onLogout}
           >
             <LogOut className="h-4 w-4" />
             Cerrar sesión
@@ -94,6 +99,22 @@ export function AppLayout() {
       </div>
     </>
   );
+}
+
+export function AppLayout() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { mutate: logout } = useLogout();
+  const { data: identity } = useGetIdentity<Identity>();
+  const { theme, setTheme } = useTheme();
+
+  const handleLogout = () => {
+    setMobileMenuOpen(false);
+    logout();
+  };
+
+  const handleToggleTheme = () => {
+    setTheme(theme === "dark" ? "light" : "dark");
+  };
 
   return (
     <div className="min-h-screen bg-background md:flex md:h-screen">
@@ -115,14 +136,25 @@ export function AppLayout() {
       </header>
 
       <aside className="hidden md:flex md:w-60 md:shrink-0 md:flex-col md:border-r md:bg-sidebar">
-        <SidebarContent />
+        <SidebarContent
+          identity={identity}
+          onCloseMobileMenu={() => setMobileMenuOpen(false)}
+          onToggleTheme={handleToggleTheme}
+          onLogout={handleLogout}
+        />
       </aside>
 
       <Dialog open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
         <DialogContent className="left-0 top-0 h-full max-w-[85vw] w-72 translate-x-0 translate-y-0 rounded-none p-0">
           <DialogTitle className="sr-only">Menú de navegación</DialogTitle>
           <aside className="flex h-full flex-col bg-sidebar">
-            <SidebarContent isMobile />
+            <SidebarContent
+              isMobile
+              identity={identity}
+              onCloseMobileMenu={() => setMobileMenuOpen(false)}
+              onToggleTheme={handleToggleTheme}
+              onLogout={handleLogout}
+            />
           </aside>
         </DialogContent>
       </Dialog>
