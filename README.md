@@ -358,9 +358,13 @@ tenpista-challenge/
 
 **Decisión:** activar virtual threads con `spring.threads.virtual.enabled: true`.
 
-Se optó por Spring Boot 4.0 para aprovechar el soporte nativo de primera clase para Virtual Threads y las optimizaciones de Spring Framework 7, garantizando un manejo de concurrencia eficiente con un consumo de recursos mínimo en entornos de contenedores.
-
 **Por qué:** las operaciones del backend son mayoritariamente I/O-bound (queries a base de datos, validaciones). Los virtual threads de Project Loom permiten manejar muchas más solicitudes concurrentes sin cambiar una sola línea de código de negocio, usando la misma API de threading bloqueante pero con el scheduler del JVM administrando el contexto de forma eficiente.
+
+### 10. Sprint Boot (4.0)
+
+**Decisión:** User la version 4.0 de Spring Boot.
+
+**Por qué:** Se optó por Spring Boot 4.0 para aprovechar el soporte nativo de primera clase para Virtual Threads y las optimizaciones de Spring Framework 7, garantizando un manejo de concurrencia eficiente con un consumo de recursos mínimo en entornos de contenedores.
 
 ---
 
