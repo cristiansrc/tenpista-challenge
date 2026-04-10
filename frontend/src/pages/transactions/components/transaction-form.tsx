@@ -115,6 +115,7 @@ export function TransactionForm({ open, onClose }: TransactionFormProps) {
                       min={1}
                       disabled={isPending}
                       {...field}
+                      value={field.value ?? ""}
                       onChange={(e) =>
                         field.onChange(e.target.value ? parseInt(e.target.value, 10) : undefined)
                       }

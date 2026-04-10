@@ -3,6 +3,7 @@ plugins {
 	id 'org.springframework.boot' version '4.0.5'
 	id 'io.spring.dependency-management' version '1.1.7'
 	id 'org.openapi.generator' version '7.4.0'
+	id 'jacoco'
 }
 
 group = 'com.tenpista.challenge'
@@ -63,6 +64,7 @@ dependencies {
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testCompileOnly         "org.projectlombok:lombok:${lombokVersion}"
 	testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+	testRuntimeOnly 'com.h2database:h2'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
@@ -98,4 +100,54 @@ tasks.named('compileJava') {
 
 tasks.named('test') {
 	useJUnitPlatform()
+	finalizedBy tasks.named('jacocoTestReport')
+}
+
+jacoco {
+	toolVersion = '0.8.12'
+}
+
+def coverageExclusions = [
+		'com/tenpista/challenge/backend/BackendApplication.class',
+		'com/tenpista/challenge/backend/infrastructure/adapter/input/rest/api/**',
+		'com/tenpista/challenge/backend/infrastructure/adapter/input/rest/dto/**',
+		'com/tenpista/challenge/backend/domain/port/**',
+		'com/tenpista/challenge/backend/domain/model/**',
+		'com/tenpista/challenge/backend/domain/exception/**',
+		'com/tenpista/challenge/backend/infrastructure/adapter/output/db/entity/**',
+		'com/tenpista/challenge/backend/infrastructure/adapter/output/db/repository/**',
+		'com/tenpista/challenge/backend/infrastructure/adapter/**/mapper/**'
+]
+
+tasks.named('jacocoTestReport', JacocoReport) {
+	dependsOn tasks.named('test')
+	reports {
+		xml.required = true
+		html.required = true
+		csv.required = false
+	}
+
+	classDirectories.setFrom(
+			files(classDirectories.files.collect { file ->
+				fileTree(dir: file, exclude: coverageExclusions)
+			})
+	)
+}
+
+tasks.named('jacocoTestCoverageVerification', JacocoCoverageVerification) {
+	dependsOn tasks.named('test')
+	classDirectories.setFrom(
+			files(tasks.named('jacocoTestReport', JacocoReport).get().classDirectories.files)
+	)
+	executionData.setFrom(fileTree(layout.buildDirectory).include('jacoco/test.exec'))
+
+	violationRules {
+		rule {
+			limit {
+				counter = 'LINE'
+				value = 'COVEREDRATIO'
+				minimum = 0.80
+			}
+		}
+	}
 }
