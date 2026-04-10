@@ -362,7 +362,7 @@ tenpista-challenge/
 
 ---
 
-### 10. Sprint Boot (4.0)
+### 10. Spring Boot (4.0)
 
 **Decisión:** Usar la version 4.0 de Spring Boot.
 
