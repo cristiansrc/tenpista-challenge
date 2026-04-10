@@ -17,6 +17,9 @@ Aplicación fullstack para el registro y consulta de transacciones financieras d
 - [Decisiones Técnicas](#decisiones-técnicas)
 - [Despliegue con Docker](#despliegue-con-docker)
 - [Desarrollo Local](#desarrollo-local)
+- [Pruebas y Cobertura](#pruebas-y-cobertura)
+  - [Reporte de Cobertura](#reporte-de-cobertura)
+  - [Perfil de Pruebas Backend (H2)](#perfil-de-pruebas-backend-h2)
 - [Interacción con la API (Swagger UI)](#interacción-con-la-api-swagger-ui)
 - [API Reference](#api-reference)
 - [Autenticación](#autenticación)
@@ -78,33 +81,33 @@ openapi.yaml  →  openapi-generator (Gradle)  →  interfaces Java (build/gener
 El backend sigue el patrón **Ports & Adapters** (Hexagonal Architecture). El dominio no tiene ninguna dependencia de Spring ni de infraestructura.
 
 ```
-┌──────────────────────────────────────────────────────────────────┐
-│                         INFRAESTRUCTURA                          │
-│                                                                  │
-│  ┌──────────────────────┐     ┌────────────────────────────────┐ │
-│  │  Adapter INPUT (REST) │    │  Adapter OUTPUT (JPA/DB)       │ │
-│  │                       │    │                                │ │
-│  │  TransactionController│    │  TransactionPersistenceAdapter │ │
-│  │  AuthController       │    │  UserPersistenceAdapter        │ │
-│  │  DomainExceptionHandler│   │  TransactionEntity             │ │
-│  │  JwtAuthFilter        │    │  UserEntity                    │ │
-│  └──────────┬───────────┘     └──────────────┬─────────────────┘ │
-│             │                                │                   │
-└─────────────┼────────────────────────────────┼───────────────────┘
-              │ usa                            │ implementa
-┌─────────────▼────────────────────────────────▼───────────────────┐
-│                           DOMINIO                                │
-│                                                                  │
-│   Ports INPUT             Ports OUTPUT          Models           │
-│   ──────────────          ────────────          ──────           │
-│   TransactionUseCase  ←→  TransactionRepo       Transaction      │
-│   AuthUseCase         ←→  UserRepo              User             │
-│                                                 PageResult<T>    │
-│                                                 Exceptions       │
-│                                                                  │
-│   Application Services (implementan los Ports INPUT):            │
-│   TransactionService · AuthService                               │
-└──────────────────────────────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────────────┐
+│                         INFRAESTRUCTURA                            │
+│                                                                    │
+│  ┌────────────────────────┐     ┌────────────────────────────────┐ │
+│  │  Adapter INPUT (REST)  │     │  Adapter OUTPUT (JPA/DB)       │ │
+│  │                        │     │                                │ │
+│  │  TransactionController │     │  TransactionPersistenceAdapter │ │
+│  │  AuthController        │     │  UserPersistenceAdapter        │ │
+│  │  DomainExceptionHandler│     │  TransactionEntity             │ │
+│  │  JwtAuthFilter         │     │  UserEntity                    │ │
+│  └──────────┬─────────────┘     └──────────────┬─────────────────┘ │
+│             │                                  │                   │
+└─────────────┼──────────────────────────────────┼───────────────────┘
+              │ usa                              │ implementa
+┌─────────────▼──────────────────────────────────▼───────────────────┐
+│                           DOMINIO                                  │
+│                                                                    │
+│   Ports INPUT             Ports OUTPUT          Models             │
+│   ──────────────          ────────────          ──────             │
+│   TransactionUseCase  ←→  TransactionRepo       Transaction        │
+│   AuthUseCase         ←→  UserRepo              User               │
+│                                                 PageResult<T>      │
+│                                                 Exceptions         │
+│                                                                    │
+│   Application Services (implementan los Ports INPUT):              │
+│   TransactionService · AuthService                                 │
+└────────────────────────────────────────────────────────────────────┘
 ```
 
 **Regla de dependencias:** las flechas siempre apuntan **hacia el dominio**. El dominio no sabe nada de Spring, JPA ni HTTP.
@@ -453,6 +456,49 @@ npm run dev
 El dev server arranca en `http://localhost:5173` con hot-reload habilitado.
 
 > El archivo raíz `.env` ya contiene `VITE_API_URL=http://localhost:8080/v1/api` apuntando al backend local.
+
+---
+
+## Pruebas y Cobertura
+
+### Reporte de Cobertura
+
+Cobertura actual obtenida ejecutando los comandos del proyecto:
+
+- Backend: `./gradlew cleanTest test jacocoTestReport jacocoTestCoverageVerification`
+- Frontend: `npm run test:coverage`
+
+| Módulo | Lines | Statements | Branches | Functions |
+|---|---:|---:|---:|---:|
+| Backend | **100.00%** | 100.00% | 100.00% | 100.00% |
+| Frontend | **97.14%** | 97.14% | 90.82% | 81.01% |
+
+Notas:
+
+- En frontend, `npm run test:coverage` ejecuta Vitest con cobertura y luego valida automáticamente que **ningún archivo** quede bajo 80% de líneas.
+- En backend, JaCoCo valida el umbral global de cobertura sobre el scope configurado en `build.gradle` (excluyendo código generado, DTOs, interfaces y POJOs de infraestructura no críticos).
+
+### Perfil de Pruebas Backend (H2)
+
+Para pruebas del backend se usa un perfil dedicado llamado **test** con base de datos **H2 en memoria**, definido en:
+
+```
+backend/src/test/resources/application-test.yaml
+```
+
+Objetivo del perfil:
+
+- Evitar dependencia de una base PostgreSQL real durante tests unitarios/integración ligera.
+- Hacer las pruebas más rápidas, determinísticas y aisladas.
+- Evitar fallos por credenciales, red o estado externo.
+
+Configuración clave del perfil test:
+
+- `spring.datasource.url`: H2 en memoria (`jdbc:h2:mem:...`)
+- `spring.jpa.hibernate.ddl-auto`: `create-drop`
+- `spring.flyway.enabled`: `false`
+
+Además, el test de contexto usa explícitamente este perfil (`@ActiveProfiles("test")`) para garantizar que siempre cargue H2 y no PostgreSQL local.
 
 ---
 
