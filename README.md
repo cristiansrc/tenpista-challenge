@@ -13,6 +13,7 @@ Aplicación fullstack para el registro y consulta de transacciones financieras d
   - [Estructura Frontend](#estructura-frontend)
 - [Tecnologías](#tecnologías)
 - [Principios SOLID en el Proyecto](#principios-solid-en-el-proyecto)
+- [Automatización y Código Generado](#automatización-y-código-generado)
 - [Estructura del Proyecto](#estructura-del-proyecto)
 - [Variables de Entorno](#variables-de-entorno)
 - [Decisiones Técnicas](#decisiones-técnicas)
@@ -22,7 +23,7 @@ Aplicación fullstack para el registro y consulta de transacciones financieras d
   - [Reporte de Cobertura](#reporte-de-cobertura)
   - [Perfil de Pruebas Backend (H2)](#perfil-de-pruebas-backend-h2)
 - [Interacción con la API (Swagger UI)](#interacción-con-la-api-swagger-ui)
-- [API Reference](#api-reference)
+- [Referencia de API](#referencia-de-api)
 - [Autenticación](#autenticación)
 - [Reglas de Negocio](#reglas-de-negocio)
 - [Credenciales de Acceso](#credenciales-de-acceso)
@@ -196,6 +197,31 @@ El diseño del backend (arquitectura hexagonal + puertos) y del frontend (provid
 - El dominio depende de abstracciones (ports), no de detalles de infraestructura.
 - Los servicios de aplicación dependen de interfaces de repositorio, y los adapters de infraestructura implementan esas interfaces.
 - Resultado: mayor testabilidad, bajo acoplamiento y posibilidad de reemplazar detalles técnicos (DB/framework) con cambios mínimos.
+
+Resumen rápido (principio → evidencia → beneficio):
+
+| Principio | Evidencia en el proyecto | Beneficio práctico |
+|---|---|---|
+| SRP | `TransactionService`, `JwtAuthFilter`, `DomainExceptionHandler`, `TransactionForm` | Menor complejidad por clase/componente y cambios más seguros |
+| OCP | Extensión de filtros vía contrato OpenAPI + adapters sobre puertos | Nuevas capacidades sin reescribir lógica base |
+| LSP | Implementaciones/mocks de `TransactionRepo` y `UserRepo` respetando contrato | Sustitución de implementaciones sin romper casos de uso |
+| ISP | Interfaces separadas (`TransactionUseCase`, `AuthUseCase`, `TransactionRepo`, `UserRepo`) | Menor acoplamiento y dependencias más limpias |
+| DIP | Dominio depende de puertos; infraestructura implementa adapters | Alta testabilidad y flexibilidad tecnológica |
+
+---
+
+## Automatización y Código Generado
+
+En este proyecto, el código generado no se usa como “principio” arquitectónico, sino como una práctica para reducir boilerplate, asegurar consistencia y mover errores a compile-time.
+
+| Herramienta / enfoque | Qué se genera o automatiza | Beneficio técnico |
+|---|---|---|
+| API Design First + OpenAPI Generator | Interfaces de controladores Spring MVC desde `openapi.yaml` | Contrato API como fuente de verdad; evita desalineación entre docs y código |
+| Spring Data JPA | Implementación de acceso a datos a partir de repositorios e integración con entidades | Menos código repetitivo de persistencia y consultas más mantenibles |
+| MapStruct | Implementaciones de mappers entre entidades/DTO/modelos en compile-time | Mapeos type-safe, rápidos y sin reflection en runtime |
+| Lombok | Métodos/constructores comunes (`getter/setter`, `builder`, etc.) | Menor boilerplate y clases más enfocadas en lógica de negocio |
+
+Resultado práctico: mayor productividad sin sacrificar calidad del diseño, manteniendo una base de código más limpia, consistente y fácil de evolucionar.
 
 ---
 
@@ -407,7 +433,7 @@ tenpista-challenge/
 
 ### 10. Spring Boot (4.0)
 
-**Decisión:** Usar la version 4.0 de Spring Boot.
+**Decisión:** usar la versión 4.0 de Spring Boot.
 
 **Por qué:** Se optó por Spring Boot 4.0 para aprovechar el soporte nativo de primera clase para Virtual Threads y las optimizaciones de Spring Framework 7, garantizando un manejo de concurrencia eficiente con un consumo de recursos mínimo en entornos de contenedores.
 
@@ -603,7 +629,7 @@ Con el token configurado, ya es posible ejecutar `GET /transactions` y `POST /tr
 
 ---
 
-## API Reference
+## Referencia de API
 
 ### Autenticación
 
