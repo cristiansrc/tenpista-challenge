@@ -1,28 +1,29 @@
 import { render, screen } from "@testing-library/react";
-import { Badge, badgeVariants } from "@/components/ui/badge";
+import { describe, it, expect } from "vitest";
+import { Badge } from "@/components/ui/badge";
 
 describe("Badge", () => {
   it("renders content with default variant", () => {
-    render(<Badge>Nuevo</Badge>);
-
-    const badge = screen.getByText("Nuevo");
+    render(<Badge>Test Badge</Badge>);
+    const badge = screen.getByText("Test Badge");
     expect(badge).toBeInTheDocument();
-    expect(badge.className).toContain("bg-primary");
+    expect(badge).toHaveClass("bg-primary");
   });
 
   it("applies variant and extra className", () => {
     render(
-      <Badge variant="secondary" className="custom-class">
-        Secundario
+      <Badge variant="destructive" className="custom-class">
+        Destructive
       </Badge>
     );
-
-    const badge = screen.getByText("Secundario");
-    expect(badge.className).toContain("bg-secondary");
-    expect(badge.className).toContain("custom-class");
+    const badge = screen.getByText("Destructive");
+    expect(badge).toHaveClass("bg-destructive");
+    expect(badge).toHaveClass("custom-class");
   });
 
   it("exposes outline classes from variant helper", () => {
-    expect(badgeVariants({ variant: "outline" })).toContain("text-foreground");
+    render(<Badge variant="outline">Outline</Badge>);
+    const badge = screen.getByText("Outline");
+    expect(badge).toHaveClass("text-foreground");
   });
 });

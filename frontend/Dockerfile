@@ -1,12 +1,13 @@
 FROM node:20-alpine AS build
 WORKDIR /app
 
-# Argumento de build para la URL del API
 ARG VITE_API_URL=http://localhost:8080/v1/api
+ARG VITE_MFE_TRANSACTIONS_URL=http://localhost:3001
 ENV VITE_API_URL=$VITE_API_URL
+ENV VITE_MFE_TRANSACTIONS_URL=$VITE_MFE_TRANSACTIONS_URL
 
 COPY package*.json ./
-RUN npm install
+RUN npm install --legacy-peer-deps
 
 COPY . .
 RUN npm run build

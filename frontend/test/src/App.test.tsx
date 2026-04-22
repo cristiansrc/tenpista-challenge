@@ -41,7 +41,7 @@ vi.mock("@/pages/login", () => ({
   default: () => <div>mock-login-page</div>,
 }));
 
-vi.mock("@/pages/transactions", () => ({
+vi.mock("transactionsMfe/TransactionsPage", () => ({
   default: () => <div>mock-transactions-page</div>,
 }));
 

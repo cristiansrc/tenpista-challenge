@@ -5,9 +5,10 @@ import path from "path";
 export default defineConfig({
   plugins: [react()],
   resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "./src"),
-    },
+    alias: [
+      { find: "@", replacement: path.resolve(__dirname, "./src") },
+      { find: /^transactionsMfe\/(.*)$/, replacement: path.resolve(__dirname, "./test/mocks/remote-mfe.tsx") },
+    ],
   },
   test: {
     environment: "jsdom",
@@ -23,6 +24,8 @@ export default defineConfig({
         "src/main.tsx",
         "src/vite-env.d.ts",
         "src/types/**",
+        "src/declarations.d.ts",
+        "src/pages/transactions/**",
       ],
       thresholds: {
         lines: 80,

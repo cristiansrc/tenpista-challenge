@@ -1,32 +1,38 @@
-﻿import { handleJsonResponse } from "@/providers/data-provider/shared/response";
+import { describe, it, expect } from "vitest";
+import { handleJsonResponse } from "@/providers/data-provider/shared/response";
 
 describe("handleJsonResponse", () => {
   it("returns parsed JSON when response is OK with body", async () => {
-    const response = new Response(JSON.stringify({ ok: true }), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
+    const mockResponse = {
+      ok: true,
+      text: async () => JSON.stringify({ data: "ok" }),
+    } as Response;
 
-    await expect(handleJsonResponse(response)).resolves.toEqual({ ok: true });
+    const result = await handleJsonResponse(mockResponse);
+    expect(result).toEqual({ data: "ok" });
   });
 
   it("returns null when response is OK and body is empty", async () => {
-    const response = new Response("", { status: 200 });
+    const mockResponse = {
+      ok: true,
+      text: async () => "",
+    } as Response;
 
-    await expect(handleJsonResponse(response)).resolves.toBeNull();
+    const result = await handleJsonResponse(mockResponse);
+    expect(result).toBeNull();
   });
 
   it("throws enriched error when response is not OK", async () => {
-    const response = new Response(JSON.stringify({ message: "Invalid" }), {
+    const mockResponse = {
+      ok: false,
       status: 400,
-      headers: { "Content-Type": "application/json" },
-    });
+      json: async () => ({ message: "Bad Request" }),
+    } as Response;
 
-    await expect(handleJsonResponse(response)).rejects.toMatchObject({
-      message: "Invalid",
+    await expect(handleJsonResponse(mockResponse)).rejects.toMatchObject({
+      message: "Bad Request",
       status: 400,
-      response,
+      response: mockResponse,
     });
   });
 });
-

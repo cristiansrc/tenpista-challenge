@@ -7,7 +7,7 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD:-password_cris}
       POSTGRES_DB: ${DB_NAME:-tenpista_db}
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - tenpista_db_data:/var/lib/postgresql/data
     healthcheck:
@@ -33,16 +33,26 @@ services:
       db:
         condition: service_healthy
 
+  mfe-transactions:
+    build:
+      context: ./mfe-transactions
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:8080/v1/api}
+    container_name: tenpista-mfe-transactions
+    depends_on:
+      - backend
+
   frontend:
     build:
       context: ./frontend
       args:
         VITE_API_URL: ${VITE_API_URL:-http://localhost:8080/v1/api}
+        VITE_MFE_TRANSACTIONS_URL: /mfe/transactions
     container_name: tenpista-ui
     ports:
       - "80:80"
     depends_on:
-      - backend
+      - mfe-transactions
 
 volumes:
   tenpista_db_data:
