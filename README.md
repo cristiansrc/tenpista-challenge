@@ -1,6 +1,6 @@
 # Tenpista Challenge — Fullstack
 
-Aplicación fullstack para el registro y consulta de transacciones financieras de Tenpistas. Construida con **Java 21 + Spring Boot 4** en el backend y **React 18 + Vite + Refine** en el frontend, orquestados con Docker Compose.
+Aplicación fullstack para el registro y consulta de transacciones financieras de Tenpistas. Construida con **Java 21 + Spring Boot 4** en el backend y **React 18 + Vite + Refine** en el frontend con arquitectura **micro-frontend**, orquestados con Docker Compose.
 
 ---
 
@@ -10,7 +10,8 @@ Aplicación fullstack para el registro y consulta de transacciones financieras d
 - [Arquitectura](#arquitectura)
   - [API Design First](#api-design-first)
   - [Arquitectura Hexagonal (Backend)](#arquitectura-hexagonal-backend)
-  - [Estructura Frontend](#estructura-frontend)
+  - [Arquitectura Micro-Frontend](#arquitectura-micro-frontend)
+  - [Estructura Frontend (Shell)](#estructura-frontend-shell)
 - [Tecnologías](#tecnologías)
 - [Principios SOLID en el Proyecto](#principios-solid-en-el-proyecto)
 - [Automatización y Código Generado](#automatización-y-código-generado)
@@ -128,12 +129,53 @@ El backend sigue el patrón **Ports & Adapters** (Hexagonal Architecture). El do
 
 ---
 
-### Estructura Frontend
+### Arquitectura Micro-Frontend
 
-El frontend está construido con **Refine v5**, un meta-framework sobre React que provee data fetching, auth, notificaciones y routing con mínimo boilerplate.
+El frontend está dividido en dos aplicaciones independientes que se comunican en runtime mediante **Module Federation** (`@originjs/vite-plugin-federation`):
 
 ```
-src/
+┌───────────────────────────────────────────────────────────────┐
+│                    BROWSER (puerto 80)                        │
+│                                                               │
+│  ┌─────────────────────────────────────────────────────────┐  │
+│  │                  Shell (frontend/)                      │  │
+│  │                                                         │  │
+│  │  Columna izquierda          Columna derecha (workspace) │  │
+│  │  ─────────────────          ──────────────────────────  │  │
+│  │  · Avatar usuario           ┌──────────────────────┐   │  │
+│  │  · Menú de navegación       │  MFE Transacciones   │   │  │
+│  │  · Email del usuario        │  (cargado dinámico)  │   │  │
+│  │  · Botón logout             └──────────────────────┘   │  │
+│  └─────────────────────────────────────────────────────────┘  │
+│                                                               │
+│  nginx proxy: /mfe/transactions/* → contenedor mfe interno    │
+└───────────────────────────────────────────────────────────────┘
+```
+
+**Shell** (`frontend/`): contiene el layout completo (sidebar + área de trabajo), auth, routing y los providers de Refine. Carga el MFE de transacciones en runtime mediante `React.lazy`.
+
+**MFE Transacciones** (`mfe-transactions/`): aplicación Vite independiente que expone el componente `TransactionsPage`. Puede desplegarse y probarse de forma autónoma. Dentro del stack Docker se sirve internamente (sin puerto expuesto al host) y el shell nginx lo proxea.
+
+**Dependencias compartidas como singletons:** `react`, `react-dom`, `react-router`, `@refinedev/core`, `@refinedev/react-router`, `@refinedev/react-table` y `@tanstack/react-table` se negocian como instancias únicas entre shell y MFE. Esto garantiza que los hooks de Refine (`useTable`, `useCreate`) del MFE operen sobre el mismo contexto de providers del shell.
+
+```
+Shell (host)                          MFE (remote)
+──────────────────────────            ──────────────────────────
+Refine context (providers)            TransactionsPage component
+React.lazy(import(...))  ──────────►  exposes: ./TransactionsPage
+nginx: /mfe/transactions/             remoteEntry.js
+       ↓ proxy
+  tenpista-mfe-transactions:80
+```
+
+---
+
+### Estructura Frontend (Shell)
+
+El frontend shell está construido con **Refine v5**, un meta-framework sobre React que provee data fetching, auth, notificaciones y routing con mínimo boilerplate.
+
+```
+frontend/src/
 ├── providers/
 │   ├── auth-provider/       # AuthProvider de Refine (login/logout/check)
 │   └── data-provider/       # DataProvider personalizado (fetch con JWT)
@@ -148,12 +190,24 @@ src/
 │       ├── notification/
 │       └── theme/
 ├── pages/
-│   ├── login/               # Página de login
-│   └── transactions/        # Lista + TransactionForm + TransactionFilters
+│   └── login/               # Página de login
 ├── types/                   # Tipos TypeScript (Transaction, TransactionPage)
 ├── lib/utils.ts             # cn(), formatCurrency(), formatDate()
-├── App.tsx                  # Refine setup, rutas, providers
+├── declarations.d.ts        # Tipos para módulos federation (transactionsMfe/*)
+├── App.tsx                  # Refine setup, rutas, carga dinámica del MFE
 └── main.tsx                 # Entry point
+```
+
+```
+mfe-transactions/src/
+├── providers/               # Copia de providers (para modo standalone)
+├── components/              # shadcn/ui + DataTable + paginación
+├── pages/
+│   └── transactions/        # TransactionList + TransactionForm + Filters
+├── types/
+├── lib/utils.ts
+├── TransactionsPage.tsx     # Punto de exposición via Module Federation
+└── main.tsx                 # Entry point standalone (desarrollo/preview)
 ```
 
 ---
@@ -260,13 +314,15 @@ Resultado práctico: mayor productividad sin sacrificar calidad del diseño, man
 | Sonner | 2.x | Notificaciones toast |
 | next-themes | 0.4 | Dark/light mode |
 | js-cookie | 3.x | Almacenamiento del JWT |
+| @originjs/vite-plugin-federation | 1.3.x | Module Federation para micro-frontend |
 
 ### Infraestructura
 
 | Tecnología | Uso |
 |---|---|
 | Docker + Docker Compose | Orquestación de servicios |
-| nginx | Servidor del frontend (SPA routing) |
+| nginx | Servidor del shell (SPA routing + proxy al MFE) |
+| nginx (MFE) | Servidor del micro-frontend de transacciones |
 | eclipse-temurin:21 | Imagen base del backend |
 
 ---
@@ -302,18 +358,32 @@ tenpista-challenge/
 │   │   └── test/
 │   ├── build.gradle
 │   └── Dockerfile
-├── frontend/
+├── frontend/                             ← Shell (layout + auth + routing)
 │   ├── src/
 │   │   ├── components/
-│   │   ├── pages/
+│   │   ├── pages/login/
 │   │   ├── providers/
 │   │   ├── types/
-│   │   ├── App.tsx
+│   │   ├── declarations.d.ts             ← Tipos para módulos federation
+│   │   ├── App.tsx                       ← Carga dinámica del MFE
 │   │   └── main.tsx
+│   ├── index.html
+│   ├── nginx.conf                        ← Proxy /mfe/transactions/ → MFE
+│   ├── package.json
+│   ├── vite.config.ts                    ← Federation host config
+│   └── Dockerfile
+├── mfe-transactions/                     ← Micro-frontend de transacciones
+│   ├── src/
+│   │   ├── components/
+│   │   ├── pages/transactions/
+│   │   ├── providers/
+│   │   ├── types/
+│   │   ├── TransactionsPage.tsx          ← Componente expuesto via federation
+│   │   └── main.tsx                      ← Entry point standalone
 │   ├── index.html
 │   ├── nginx.conf
 │   ├── package.json
-│   ├── vite.config.ts
+│   ├── vite.config.ts                    ← Federation remote config
 │   └── Dockerfile
 ├── docker-compose.yml
 └── README.md
@@ -341,13 +411,20 @@ tenpista-challenge/
 
 > **Producción:** reemplazar `JWT_SECRET` por una clave segura generada con `openssl rand -base64 32`.
 
-### Frontend
+### Frontend (Shell)
 
 | Variable | Default | Descripción |
 |---|---|---|
 | `VITE_API_URL` | `http://localhost:8080/v1/api` | URL base del backend |
+| `VITE_MFE_TRANSACTIONS_URL` | `http://localhost:3001` | URL base del MFE de transacciones |
 
-> La variable se hornea en el bundle de Vite en tiempo de compilación. Para Docker, se pasa como `build.args` en `docker-compose.yml`.
+### MFE Transacciones
+
+| Variable | Default | Descripción |
+|---|---|---|
+| `VITE_API_URL` | `http://localhost:8080/v1/api` | URL base del backend (para modo standalone) |
+
+> Todas las variables se hornean en el bundle de Vite en tiempo de compilación. Para Docker, se pasan como `build.args` en `docker-compose.yml`. En el stack Docker, `VITE_MFE_TRANSACTIONS_URL` se establece como `/mfe/transactions` (ruta relativa proxeada por nginx), por lo que el MFE no necesita puerto expuesto al host.
 
 ---
 
@@ -431,7 +508,24 @@ tenpista-challenge/
 
 ---
 
-### 10. Spring Boot (4.0)
+### 10. Arquitectura Micro-Frontend con Module Federation
+
+**Decisión:** separar la página de transacciones en un micro-frontend independiente (`mfe-transactions/`) que se carga en runtime dentro del layout del shell mediante `@originjs/vite-plugin-federation`.
+
+**Por qué:** la pantalla tiene dos responsabilidades bien diferenciadas: el layout estructural (sidebar, auth, navegación) y el área de trabajo de cada módulo funcional. Module Federation permite que cada área de trabajo sea una aplicación Vite independiente que se despliega, versiona y evoluciona de forma autónoma sin recompilar el shell.
+
+**Detalles de implementación:**
+- El shell actúa como **host** federation: importa `transactionsMfe/TransactionsPage` con `React.lazy`, de modo que el bundle del MFE se carga solo cuando el usuario navega a `/transactions`.
+- El MFE actúa como **remote**: expone `./TransactionsPage` en su `remoteEntry.js`.
+- Las librerías `react`, `react-dom`, `react-router` y el stack de Refine (`@refinedev/core`, `@refinedev/react-table`, etc.) se negocian como **singletons**. Esto garantiza que los hooks del MFE (`useTable`, `useCreate`) operen sobre el contexto de providers del shell sin conflictos de instancias.
+- En Docker, el MFE corre como un contenedor interno sin puerto expuesto al host. El nginx del shell hace proxy de `/mfe/transactions/*` hacia ese contenedor, por lo que desde el browser todo parece servido desde el mismo origen.
+- El MFE incluye su propio `main.tsx` con providers completos para poder ejecutarse de forma **standalone** (`npm run build && npm run preview`) durante desarrollo, sin depender del shell.
+
+**Workaround técnico:** `@refinedev/core` no declara `./package.json` en su mapa `exports`, lo que impide que el plugin resuelva la versión para la negociación de singletons. Se resuelve con un pequeño plugin Rollup (`allowPackageJsonPlugin`) que intercepta esas resoluciones y las apunta directamente al archivo en disco, bypasseando el chequeo del mapa de exports.
+
+---
+
+### 11. Spring Boot (4.0)
 
 **Decisión:** usar la versión 4.0 de Spring Boot.
 
@@ -439,7 +533,7 @@ tenpista-challenge/
 
 ---
 
-### 11. Estandarización de errores con `DomainExceptionHandler`
+### 12. Estandarización de errores con `DomainExceptionHandler`
 
 **Decisión:** centralizar el manejo de excepciones de negocio y validación en una clase `DomainExceptionHandler` anotada con `@RestControllerAdvice`.
 
@@ -460,15 +554,18 @@ tenpista-challenge/
 docker compose up --build
 ```
 
-Esto levanta tres servicios:
+Esto levanta cuatro servicios:
 
 | Servicio | Puerto | Descripción |
 |---|---|---|
-| `tenpista-db` | 5432 | PostgreSQL 15 |
+| `tenpista-db` | 5433 | PostgreSQL 15 |
 | `tenpista-api` | 8080 | Spring Boot 4 |
-| `tenpista-ui` | 80 | React + nginx |
+| `tenpista-mfe-transactions` | — (interno) | Micro-frontend de transacciones |
+| `tenpista-ui` | 80 | Shell React + nginx |
 
-El backend espera a que la base de datos esté saludable (healthcheck) antes de arrancar. Flyway ejecuta las migraciones automáticamente al inicio. El usuario seed se crea en el primer arranque.
+El backend espera a que la base de datos esté saludable (healthcheck) antes de arrancar. El shell espera a que el MFE esté disponible antes de arrancar. Flyway ejecuta las migraciones automáticamente al inicio. El usuario seed se crea en el primer arranque.
+
+> `tenpista-mfe-transactions` no expone ningún puerto al host. El nginx del shell hace proxy de `/mfe/transactions/*` hacia ese contenedor en la red interna de Docker.
 
 ### Acceso
 
@@ -530,9 +627,26 @@ El servidor queda disponible en `http://localhost:8080/v1/api`.
 
 ---
 
-### Paso 3 — Levantar el frontend
+### Paso 3 — Levantar el MFE de transacciones
 
 Requisitos: Node.js 20+.
+
+`@originjs/vite-plugin-federation` solo opera en modo **build** (no en `vite dev`). Por eso el MFE se compila y se sirve con `vite preview`:
+
+```bash
+cd mfe-transactions
+
+npm install
+
+# Compilar y servir en http://localhost:3001
+npm run build && npm run preview
+```
+
+Dejar esta terminal corriendo. El MFE queda disponible en `http://localhost:3001`.
+
+---
+
+### Paso 4 — Levantar el shell
 
 ```bash
 cd frontend
@@ -542,7 +656,7 @@ npm install
 npm run dev
 ```
 
-El dev server arranca en `http://localhost:5173` con hot-reload habilitado.
+El dev server del shell arranca en `http://localhost:5173`. Carga el MFE desde `http://localhost:3001` (valor por defecto de `VITE_MFE_TRANSACTIONS_URL`).
 
 > El archivo raíz `.env` ya contiene `VITE_API_URL=http://localhost:8080/v1/api` apuntando al backend local.
 

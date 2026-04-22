@@ -4,9 +4,6 @@ import federation from "@originjs/vite-plugin-federation";
 import path from "path";
 import { existsSync } from "fs";
 
-// Vite respeta el mapa "exports" de los paquetes y bloquea imports de package.json
-// si el paquete no los declara explícitamente (ej. @refinedev/*).
-// Este plugin intercepta esas resoluciones y las apunta directamente al archivo en disco.
 function allowPackageJsonPlugin() {
   return {
     name: "allow-package-json",
@@ -23,16 +20,15 @@ function allowPackageJsonPlugin() {
   };
 }
 
-const mfeUrl = process.env.VITE_MFE_TRANSACTIONS_URL ?? "http://localhost:3001";
-
 export default defineConfig({
   plugins: [
     allowPackageJsonPlugin(),
     react(),
     federation({
-      name: "shell",
-      remotes: {
-        transactionsMfe: `${mfeUrl}/assets/remoteEntry.js`,
+      name: "transactions-mfe",
+      filename: "remoteEntry.js",
+      exposes: {
+        "./TransactionsPage": "./src/TransactionsPage.tsx",
       },
       shared: {
         react: { singleton: true },
@@ -46,15 +42,11 @@ export default defineConfig({
     }),
   ],
   resolve: {
-    alias: {
-      "@": path.resolve(__dirname, "./src"),
-    },
-  },
-  optimizeDeps: {
-    exclude: ["@refinedev/core"],
+    alias: { "@": path.resolve(__dirname, "./src") },
   },
   build: {
     target: "esnext",
     minify: false,
+    cssCodeSplit: false,
   },
 });

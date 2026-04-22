@@ -1,3 +1,4 @@
+import React, { Suspense } from "react";
 import { Authenticated, Refine } from "@refinedev/core";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router";
 import routerProvider from "@refinedev/react-router";
@@ -11,7 +12,9 @@ import { useNotificationProvider } from "@/components/refine-ui/notification/use
 import { AppLayout } from "@/components/layout/app-layout";
 import { ErrorComponent } from "@/components/refine-ui/layout/error-component";
 import LoginPage from "@/pages/login";
-import TransactionList from "@/pages/transactions";
+
+// Micro-frontend de transacciones cargado dinámicamente vía Module Federation
+const TransactionsMFE = React.lazy(() => import("transactionsMfe/TransactionsPage"));
 
 function App() {
   const notificationProvider = useNotificationProvider();
@@ -51,7 +54,18 @@ function App() {
               }
             >
               <Route index element={<Navigate to="/transactions" replace />} />
-              <Route path="/transactions" element={<TransactionList />} />
+              <Route
+                path="/transactions"
+                element={
+                  <Suspense fallback={
+                    <div className="flex h-full items-center justify-center">
+                      <span className="text-muted-foreground text-sm">Cargando transacciones...</span>
+                    </div>
+                  }>
+                    <TransactionsMFE />
+                  </Suspense>
+                }
+              />
             </Route>
 
             <Route path="*" element={<ErrorComponent />} />
