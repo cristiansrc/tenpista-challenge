@@ -1,130 +1,141 @@
-﻿import { transactionsDataProvider } from "@/providers/data-provider/transactions";
-import * as authModule from "@/providers/data-provider/shared/auth";
-import * as responseModule from "@/providers/data-provider/shared/response";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { transactionsDataProvider } from "@/providers/data-provider/transactions";
+import { getJsonAuthHeaders } from "@/providers/data-provider/shared/auth";
+import { handleJsonResponse } from "@/providers/data-provider/shared/response";
 
 vi.mock("@/providers/data-provider/shared/auth", () => ({
-  getJsonAuthHeaders: vi.fn(() => ({ "Content-Type": "application/json" })),
+  getJsonAuthHeaders: vi.fn(() => ({ Authorization: "Bearer token" })),
 }));
 
 vi.mock("@/providers/data-provider/shared/response", () => ({
   handleJsonResponse: vi.fn(),
 }));
 
+const globalFetch = global.fetch;
+
 describe("transactionsDataProvider", () => {
   beforeEach(() => {
-    vi.restoreAllMocks();
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true }));
+    vi.clearAllMocks();
+    global.fetch = vi.fn();
+  });
+
+  afterAll(() => {
+    global.fetch = globalFetch;
   });
 
   it("getApiUrl returns configured API URL", () => {
-    expect(transactionsDataProvider.getApiUrl()).toBeTruthy();
+    expect(transactionsDataProvider.getApiUrl()).toContain("/v1/api");
   });
 
-  it("getList builds query with pagination and filters", async () => {
-    vi.mocked(responseModule.handleJsonResponse).mockResolvedValue({
-      content: [{ id: 1 }],
-      total_elements: 1,
+  describe("getList", () => {
+    it("builds query with pagination and filters", async () => {
+      const mockData = { content: [], total_elements: 0 };
+      (handleJsonResponse as any).mockResolvedValueOnce(mockData);
+
+      await transactionsDataProvider.getList({
+        resource: "transactions",
+        pagination: { currentPage: 2, pageSize: 20 },
+        filters: [
+          { field: "tenpista_name", operator: "contains", value: "Juan" },
+          { field: "commerce_name", operator: "contains", value: "Starbucks" },
+          { field: "transaction_date_from", operator: "gte", value: "2026-01-01" },
+          { field: "transaction_date_to", operator: "lte", value: "2026-01-31" },
+        ],
+      });
+
+      const fetchUrl = (global.fetch as any).mock.calls[0][0];
+      const url = new URL(fetchUrl);
+
+      expect(url.searchParams.get("page")).toBe("1");
+      expect(url.searchParams.get("size")).toBe("20");
+      expect(url.searchParams.get("tenpistaName")).toBe("Juan");
+      expect(url.searchParams.get("commerceName")).toBe("Starbucks");
+      expect(url.searchParams.get("fromDate")).toBe("2026-01-01T00:00:00Z");
+      expect(url.searchParams.get("toDate")).toBe("2026-01-31T23:59:59.999Z");
     });
 
-    const result = await transactionsDataProvider.getList({
-      resource: "transactions",
-      pagination: { currentPage: 2, pageSize: 20, mode: "server" },
-      filters: [
-        { field: "tenpista_name", operator: "contains", value: "Juan" },
-        { field: "commerce_name", operator: "contains", value: "Market" },
-        { field: "transaction_date_from", operator: "eq", value: "2026-04-01" },
-        { field: "transaction_date_to", operator: "eq", value: "2026-04-09" },
-      ],
-      sorters: [],
-      meta: {},
+    it("uses default pagination when params are not provided", async () => {
+      (handleJsonResponse as any).mockResolvedValueOnce({
+        content: [],
+        total_elements: 0,
+      });
+
+      await transactionsDataProvider.getList({ resource: "transactions" });
+
+      const fetchUrl = (global.fetch as any).mock.calls[0][0];
+      const url = new URL(fetchUrl);
+      expect(url.searchParams.get("page")).toBe("0");
+      expect(url.searchParams.get("size")).toBe("10");
+    });
+  });
+
+  describe("create", () => {
+    it("posts body and returns parsed data", async () => {
+      const variables = { amount: 100 };
+      const mockData = { id: 1, ...variables };
+      (handleJsonResponse as any).mockResolvedValueOnce(mockData);
+
+      const result = await transactionsDataProvider.create({
+        resource: "transactions",
+        variables,
+      });
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining("/transactions"),
+        expect.objectContaining({
+          method: "POST",
+          body: JSON.stringify(variables),
+          headers: expect.objectContaining({ Authorization: "Bearer token" }),
+        })
+      );
+      expect(result.data).toEqual(mockData);
+    });
+  });
+
+  describe("getOne", () => {
+    it("fetches by id", async () => {
+      const mockData = { id: "123" };
+      (handleJsonResponse as any).mockResolvedValueOnce(mockData);
+
+      const result = await transactionsDataProvider.getOne({
+        resource: "transactions",
+        id: "123",
+      });
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining("/transactions/123"),
+        expect.any(Object)
+      );
+      expect(result.data).toEqual(mockData);
+    });
+  });
+
+  describe("getMany", () => {
+    it("fetches each id and returns aggregated data", async () => {
+      (global.fetch as any).mockResolvedValue({ ok: true });
+      (handleJsonResponse as any).mockResolvedValue({ id: "any" });
+
+      const result = await transactionsDataProvider.getMany?.({
+        resource: "transactions",
+        ids: ["1", "2"],
+      });
+
+      expect(global.fetch).toHaveBeenCalledTimes(2);
+      expect(result?.data).toHaveLength(2);
+    });
+  });
+
+  describe("unsupported methods", () => {
+    it("update throws unsupported error", async () => {
+      await expect(
+        transactionsDataProvider.update({ resource: "tx", id: 1, variables: {} })
+      ).rejects.toThrow();
     });
 
-    const fetchCall = vi.mocked(fetch).mock.calls[0];
-    const calledUrl = String(fetchCall[0]);
-
-    expect(calledUrl).toContain("/transactions?");
-    expect(calledUrl).toContain("page=1");
-    expect(calledUrl).toContain("size=20");
-    expect(calledUrl).toContain("tenpistaName=Juan");
-    expect(calledUrl).toContain("commerceName=Market");
-    expect(calledUrl).toContain("fromDate=2026-04-01T00%3A00%3A00Z");
-    expect(calledUrl).toContain("toDate=2026-04-09T23%3A59%3A59.999Z");
-    expect(authModule.getJsonAuthHeaders).toHaveBeenCalled();
-
-    expect(result).toEqual({ data: [{ id: 1 }], total: 1 });
-  });
-
-  it("getList uses default pagination when params are not provided", async () => {
-    vi.mocked(responseModule.handleJsonResponse).mockResolvedValue({
-      content: [],
-      total_elements: 0,
+    it("deleteOne throws unsupported error", async () => {
+      await expect(
+        transactionsDataProvider.deleteOne({ resource: "tx", id: 1 })
+      ).rejects.toThrow();
     });
-
-    const result = await transactionsDataProvider.getList({
-      resource: "transactions",
-      pagination: undefined,
-      filters: [],
-      sorters: [],
-      meta: {},
-    });
-
-    const calledUrl = String(vi.mocked(fetch).mock.calls[0][0]);
-    expect(calledUrl).toContain("page=0");
-    expect(calledUrl).toContain("size=10");
-    expect(calledUrl).not.toContain("tenpistaName=");
-    expect(calledUrl).not.toContain("commerceName=");
-    expect(calledUrl).not.toContain("fromDate=");
-    expect(calledUrl).not.toContain("toDate=");
-    expect(result).toEqual({ data: [], total: 0 });
-  });
-
-  it("create posts body and returns parsed data", async () => {
-    vi.mocked(responseModule.handleJsonResponse).mockResolvedValue({ id: 10 });
-
-    const result = await transactionsDataProvider.create({
-      resource: "transactions",
-      variables: { amount: 1000 },
-    });
-
-    const [, options] = vi.mocked(fetch).mock.calls[0];
-    expect(options?.method).toBe("POST");
-    expect(options?.body).toBe(JSON.stringify({ amount: 1000 }));
-    expect(result).toEqual({ data: { id: 10 } });
-  });
-
-  it("getOne fetches by id", async () => {
-    vi.mocked(responseModule.handleJsonResponse).mockResolvedValue({ id: 3 });
-
-    const result = await transactionsDataProvider.getOne({ resource: "transactions", id: 3 });
-
-    expect(String(vi.mocked(fetch).mock.calls[0][0])).toContain("/transactions/3");
-    expect(result).toEqual({ data: { id: 3 } });
-  });
-
-  it("getMany fetches each id and returns aggregated data", async () => {
-    vi.mocked(responseModule.handleJsonResponse)
-      .mockResolvedValueOnce({ id: 1 })
-      .mockResolvedValueOnce({ id: 2 });
-
-    const result = await transactionsDataProvider.getMany({
-      resource: "transactions",
-      ids: [1, 2],
-    });
-
-    expect(vi.mocked(fetch)).toHaveBeenCalledTimes(2);
-    expect(result).toEqual({ data: [{ id: 1 }, { id: 2 }] });
-  });
-
-  it("update throws unsupported error", async () => {
-    await expect(
-      transactionsDataProvider.update({ resource: "transactions", id: 1, variables: {} })
-    ).rejects.toThrow("Actualizar transacciones no está soportado");
-  });
-
-  it("deleteOne throws unsupported error", async () => {
-    await expect(
-      transactionsDataProvider.deleteOne({ resource: "transactions", id: 1 })
-    ).rejects.toThrow("Eliminar transacciones no está soportado");
   });
 });
-

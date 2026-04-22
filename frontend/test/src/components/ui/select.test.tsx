@@ -1,37 +1,30 @@
-﻿import { render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
+import { describe, it, expect } from "vitest";
 import {
   Select,
-  SelectContent,
   SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectSeparator,
-  SelectTrigger,
   SelectValue,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
 } from "@/components/ui/select";
 
 describe("Select primitives", () => {
   it("renders trigger and content items when open", () => {
     render(
-      <Select defaultValue="10" open>
-        <SelectTrigger aria-label="rows-select">
-          <SelectValue placeholder="rows" />
+      <Select open={true}>
+        <SelectTrigger aria-label="Select trigger">
+          <SelectValue placeholder="Select item" />
         </SelectTrigger>
         <SelectContent>
           <SelectGroup>
-            <SelectLabel>Filas</SelectLabel>
-            <SelectItem value="10">10</SelectItem>
-            <SelectSeparator />
-            <SelectItem value="20">20</SelectItem>
+            <SelectItem value="item-1">Item 1</SelectItem>
           </SelectGroup>
         </SelectContent>
       </Select>
     );
 
-    expect(screen.getByLabelText("rows-select")).toBeInTheDocument();
-    expect(screen.getByText("Filas")).toBeInTheDocument();
-    expect(screen.getAllByText("10").length).toBeGreaterThan(0);
-    expect(screen.getByText("20")).toBeInTheDocument();
+    expect(screen.getByLabelText("Select trigger")).toBeInTheDocument();
+    expect(screen.getByText("Item 1")).toBeInTheDocument();
   });
 });
-

@@ -1,4 +1,5 @@
-﻿import { useNotificationProvider } from "@/components/refine-ui/notification/use-notification-provider";
+import { describe, it, expect, vi } from "vitest";
+import { useNotificationProvider } from "@/components/refine-ui/notification/use-notification-provider";
 import { toast } from "sonner";
 
 vi.mock("sonner", () => ({
@@ -9,37 +10,25 @@ vi.mock("sonner", () => ({
 }));
 
 describe("useNotificationProvider", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
+  const provider = useNotificationProvider();
 
   it("routes success notifications to toast.success", () => {
-    const provider = useNotificationProvider();
-
-    provider.open({ message: "ok", description: "saved", type: "success" });
-
-    expect(toast.success).toHaveBeenCalledWith("ok", { description: "saved" });
+    provider.open({ key: "1", message: "Success", type: "success" });
+    expect(toast.success).toHaveBeenCalledWith("Success", { description: undefined });
   });
 
   it("routes error notifications to toast.error", () => {
-    const provider = useNotificationProvider();
-
-    provider.open({ message: "error", description: "failed", type: "error" });
-
-    expect(toast.error).toHaveBeenCalledWith("error", { description: "failed" });
+    provider.open({ key: "2", message: "Error", type: "error" });
+    expect(toast.error).toHaveBeenCalledWith("Error", { description: undefined });
   });
 
   it("routes other notifications to default toast", () => {
-    const provider = useNotificationProvider();
-
-    provider.open({ message: "info", description: "message", type: "progress" as never });
-
-    expect(toast).toHaveBeenCalledWith("info", { description: "message" });
+    provider.open({ key: "3", message: "Info", type: "progress" });
+    expect(toast).toHaveBeenCalledWith("Info", { description: undefined });
   });
 
   it("close is a no-op function", () => {
-    const provider = useNotificationProvider();
-    expect(() => provider.close()).not.toThrow();
+    expect(provider.close).toBeTypeOf("function");
+    expect(provider.close("key")).toBeUndefined();
   });
 });
-

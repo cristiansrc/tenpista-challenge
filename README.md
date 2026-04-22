@@ -668,20 +668,22 @@ El dev server del shell arranca en `http://localhost:5173`. Carga el MFE desde `
 
 Cobertura actual obtenida ejecutando los comandos del proyecto:
 
-- Backend: `./gradlew cleanTest test jacocoTestReport jacocoTestCoverageVerification`
-- Frontend: `npm run test:coverage`
+- **Backend:** `./gradlew cleanTest test jacocoTestReport jacocoTestCoverageVerification`
+- **MFE Transactions:** `npm run test:coverage` (dentro de `mfe-transactions/`)
+- **Frontend (Shell):** `npm run test:coverage` (dentro de `frontend/`)
 
-Fecha de medición: **2026-04-09**.
+Fecha de medición: **2026-04-22**.
 
 | Módulo | Lines | Statements | Branches | Functions |
 |---|---:|---:|---:|---:|
-| Backend | **100.00%** | 100.00% | 100.00% | 100.00% |
-| Frontend | **99.04%** | 99.04% | 92.41% | 92.85% |
+| **Backend** | **100.00%** | 100.00% | 100.00% | 100.00% |
+| **MFE Transactions** | **98.81%** | 98.81% | 91.62% | 95.23% |
+| **Frontend (Shell)** | **96.96%** | 96.96% | 92.02% | 85.45% |
 
-Notas:
-
-- En frontend, `npm run test:coverage` ejecuta Vitest con cobertura y luego valida automáticamente que **ningún archivo** quede bajo 80% de líneas.
-- En backend, JaCoCo valida el umbral global de cobertura sobre el scope configurado en `build.gradle` (excluyendo código generado, DTOs, interfaces y POJOs de infraestructura no críticos).
+**Notas sobre la cobertura del Frontend:**
+- El **MFE Transactions** concentra la mayor parte de la lógica de negocio del módulo de transacciones, logrando un **98.81%** de cobertura.
+- El **Frontend (Shell)**, como orquestador y contenedor del layout, también mantiene una cobertura robusta del **96.96%**. Se han excluido de la medición los archivos redundantes de transacciones que ahora residen en el MFE.
+- En ambos proyectos de frontend, el comando `npm run test:coverage` valida automáticamente que **cada archivo individual** mantenga al menos un **80%** de cobertura de líneas, asegurando la calidad de todo el código fuente rastreado.
 
 ### Perfil de Pruebas Backend (H2)
 
