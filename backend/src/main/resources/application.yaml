@@ -47,8 +47,9 @@ springdoc:
   api-docs:
     path: /api-docs
   swagger-ui:
-    path: /swagger-ui.html
+    path: /swagger-ui
     operationsSorter: method
+    tagsSorter: alpha
 
 api:
   base-path: ""

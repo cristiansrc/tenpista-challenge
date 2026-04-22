@@ -24,7 +24,7 @@ docker compose up --build -d
 ### URLs de Acceso:
 - **Frontend (App Principal):** [http://localhost](http://localhost)
 - **API REST (Base):** [http://localhost:8080/v1/api](http://localhost:8080/v1/api)
-- **Documentación Interactiva:** [http://localhost:8080/v1/api/api-docs/swagger-ui](http://localhost:8080/v1/api/api-docs/swagger-ui)
+- **Documentación Interactiva:** [http://localhost:8080/v1/api/swagger-ui](http://localhost:8080/v1/api/swagger-ui)
 
 ---
 
